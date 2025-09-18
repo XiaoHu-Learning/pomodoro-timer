@@ -564,7 +564,6 @@
                 showStatus('沒有選擇任務，無法記錄', 'error');
                 return;
             }
-/*
             const data = {
                 action: 'updateTask',
                 taskId: currentTaskData.id,
@@ -579,8 +578,7 @@
                 // 記錄花費時間
                 timeSpent: parseInt(document.getElementById('pomodoroTime').value)
             };
-*/
-
+/*
             const data = {
                 action: 'updateTask',
                 taskId: currentTaskData.id,
@@ -589,7 +587,7 @@
                 newTomatoTotal: (currentTaskData.tomato || 0) + 1, // 預先計算總數
                 duration: parseInt(document.getElementById('pomodoroTime').value)
             };
-            
+*/            
             try {
                 const response = await fetch(webhookUrl, {
                     method: 'POST',
