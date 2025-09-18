@@ -193,9 +193,8 @@
 
             <div id="taskDetails" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
                 <h4 style="margin-bottom: 10px; color: #333;">任務詳情</h4>
-                <p><strong>安排時間：</strong><span id="taskDate">-</span></p>
+                <p><strong>安排日期：</strong><span id="taskDate">-</span></p>
                 <p><strong>目標描述：</strong><span id="taskDescription">-</span></p>
-                <p><strong>筆記頁面：</strong><a id="taskNoteLink" href="#" target="_blank" style="color: #667eea;">開啟筆記</a></p>
                 <p><strong>已完成番茄：</strong><span id="completedTomatoes">0</span> 顆</p>
             </div>
 
@@ -360,19 +359,21 @@
             
             currentTaskData = allTasks[taskIndex];
             
-            // 顯示任務詳情
-            document.getElementById('taskDate').textContent = 
-                currentTaskData.date ? new Date(currentTaskData.date).toLocaleString('zh-TW') : '未設定';
+            // 顯示任務詳情 - 只顯示日期部分
+            let dateText = '未設定';
+            if (currentTaskData.date) {
+                const taskDate = new Date(currentTaskData.date);
+                // 只取日期部分，格式：2025/9/18
+                dateText = taskDate.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: 'numeric', 
+                    day: 'numeric'
+                });
+            }
+            
+            document.getElementById('taskDate').textContent = dateText;
             document.getElementById('taskDescription').textContent = 
                 currentTaskData.description || '無描述';
-            
-            const noteLink = document.getElementById('taskNoteLink');
-            if (currentTaskData.noteUrl) {
-                noteLink.href = currentTaskData.noteUrl;
-                noteLink.style.display = 'inline';
-            } else {
-                noteLink.style.display = 'none';
-            }
             
             document.getElementById('completedTomatoes').textContent = 
                 currentTaskData.tomato || 0;
