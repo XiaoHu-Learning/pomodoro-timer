@@ -1,625 +1,609 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2487.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion番茄鐘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .setup-section {
+            margin-bottom: 20px;
+        }
+
+        .setup-section.hidden {
+            display: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            text-align: left;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .timer-display {
+            font-size: 72px;
+            font-weight: bold;
+            color: #333;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .current-task {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .current-task h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .current-task p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease;
+        }
+
+        .webhook-config {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .webhook-config input {
+            margin-bottom: 10px;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="zh-TW"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Notion番茄鐘&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>* {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-sizing: border-box;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: 'Microsoft JhengHei', sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>min-height: 100vh;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.container {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 30px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 20px 40px rgba(0,0,0,0.1);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>max-width: 400px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 90%;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>h1 {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #333;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 30px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 24px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.setup-section {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.setup-section.hidden {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: none;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>label {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: block;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: bold;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #555;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-align: left;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>select, input {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 2px solid #ddd;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.timer-display {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 72px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: bold;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #333;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 30px 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: 'Courier New', monospace;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.current-task {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #f8f9fa;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-left: 4px solid #667eea;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.current-task h3 {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #333;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 5px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.current-task p {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #666;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 14px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.controls {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>button {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px 24px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 25px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.3s ease;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>button:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform: translateY(-2px);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>button:disabled {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #ccc;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: not-allowed;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: none;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.progress {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #f0f0f0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>overflow: hidden;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 20px 0;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.progress-bar {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(90deg, #667eea, #764ba2);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 0%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: width 1s ease;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.webhook-config {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #f8f9fa;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-align: left;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.webhook-config input {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.status {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 5px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: bold;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.status.success {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #d4edda;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #155724;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #c3e6cb;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.status.error {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #f8d7da;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #721c24;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #f5c6cb;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="container"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;🍅 Notion番茄鐘&lt;/h1&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- Webhook設定 --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="webhook-config"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;h3&gt;設定連接&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="webhookUrl" placeholder="請輸入n8n Webhook URL"<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                   </span>value="https://your-n8n-instance.app.n8n.cloud/webhook/pomodoro"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="databaseId" placeholder="請輸入Notion資料庫ID"<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                   </span>value=""&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="saveWebhookConfig()"&gt;儲存設定&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- 狀態顯示 --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="status" class="status" style="display: none;"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- 任務設定區 --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="setupSection" class="setup-section"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="margin-bottom: 15px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="taskSelect"&gt;選擇今天的任務：&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;select id="taskSelect"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;option value=""&gt;-- 選擇任務 --&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/select&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button onclick="refreshTasks()" style="margin-top: 10px; padding: 8px 16px; font-size: 14px;"&gt;🔄 重新載入任務&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="taskDetails" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;h4 style="margin-bottom: 10px; color: #333;"&gt;任務詳情&lt;/h4&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p&gt;&lt;strong&gt;安排時間：&lt;/strong&gt;&lt;span id="taskDate"&gt;-&lt;/span&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p&gt;&lt;strong&gt;目標描述：&lt;/strong&gt;&lt;span id="taskDescription"&gt;-&lt;/span&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p&gt;&lt;strong&gt;筆記頁面：&lt;/strong&gt;&lt;a id="taskNoteLink" href="#" target="_blank" style="color: #667eea;"&gt;開啟筆記&lt;/a&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p&gt;&lt;strong&gt;已完成番茄：&lt;/strong&gt;&lt;span id="completedTomatoes"&gt;0&lt;/span&gt; 顆&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="margin-bottom: 15px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="pomodoroTime"&gt;番茄鐘時間 (分鐘)：&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;input type="number" id="pomodoroTime" value="25" min="1" max="60"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="margin-bottom: 15px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="expectedPomodoros"&gt;預計執行幾顆番茄：&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;input type="number" id="expectedPomodoros" value="1" min="1" max="10"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="startPomodoro()"&gt;開始番茄鐘&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- 計時器區 --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="timerSection" class="setup-section hidden"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="current-task"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 id="currentTaskName"&gt;當前任務&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="currentTaskInfo"&gt;25分鐘 | 第1/1顆番茄&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="timer-display" id="timerDisplay"&gt;25:00&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="progress"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="progress-bar" id="progressBar"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="controls"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="playPauseBtn" onclick="toggleTimer()"&gt;▶️ 開始&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button onclick="resetTimer()"&gt;🔄 重置&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button onclick="stopPomodoro()"&gt;❌ 結束&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;p style="color: #666; font-size: 14px; margin-top: 15px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>完成後會自動記錄到Notion</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 全域變數</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let currentTimer = null;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let totalSeconds = 0;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let remainingSeconds = 0;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let isRunning = false;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let currentPomodoro = 1;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let totalPomodoros = 1;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let startTime = null;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let webhookUrl = '';</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 載入時檢查是否有儲存的webhook設定</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.addEventListener('DOMContentLoaded', function() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const savedWebhook = localStorage.getItem('webhookUrl');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const savedDatabaseId = localStorage.getItem('databaseId');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (savedWebhook) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('webhookUrl').value = savedWebhook;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>webhookUrl = savedWebhook;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (savedDatabaseId) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('databaseId').value = savedDatabaseId;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>databaseId = savedDatabaseId;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 自動載入任務</p>
-<p class="p1"><span class="Apple-converted-space">                </span>refreshTasks();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 監聽任務選擇變化</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('taskSelect').addEventListener('change', onTaskSelect);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 儲存webhook設定</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function saveWebhookConfig() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const webhookInput = document.getElementById('webhookUrl');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const databaseInput = document.getElementById('databaseId');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>webhookUrl = webhookInput.value.trim();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>databaseId = databaseInput.value.trim();</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (webhookUrl &amp;&amp; databaseId) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>localStorage.setItem('webhookUrl', webhookUrl);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>localStorage.setItem('databaseId', databaseId);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('設定已儲存！正在載入任務...', 'success');</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 載入任務</p>
-<p class="p1"><span class="Apple-converted-space">                </span>refreshTasks();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('請輸入完整的Webhook URL和資料庫ID', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 載入Notion任務</p>
-<p class="p1"><span class="Apple-converted-space">        </span>async function refreshTasks() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!webhookUrl || !databaseId) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('請先設定Webhook URL和資料庫ID', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('正在載入任務...', 'success');</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>const response = await fetch(webhookUrl, {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>method: 'POST',</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>headers: {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>'Content-Type': 'application/json'</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>},</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>body: JSON.stringify({</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>action: 'getTasks',</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>databaseId: databaseId,</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>date: new Date().toISOString().split('T')[0] // 今天的日期 YYYY-MM-DD</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>})</p>
-<p class="p1"><span class="Apple-converted-space">                </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (response.ok) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const data = await response.json();</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>allTasks = data.tasks || [];</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>updateTaskSelect();</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>showStatus(`已載入 ${allTasks.length} 個任務`, 'success');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>throw new Error('載入任務失敗');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} catch (error) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>console.error('載入任務時發生錯誤:', error);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('❌ 載入任務失敗，請檢查設定', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 更新任務選擇下拉選單</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function updateTaskSelect() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const select = document.getElementById('taskSelect');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 清空現有選項</p>
-<p class="p1"><span class="Apple-converted-space">            </span>select.innerHTML = '&lt;option value=""&gt;-- 選擇任務 --&lt;/option&gt;';</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 添加今天的任務</p>
-<p class="p1"><span class="Apple-converted-space">            </span>allTasks.forEach((task, index) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const option = document.createElement('option');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>option.value = index;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>option.textContent = task.title;</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 如果任務已完成，在後面加上勾號</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (task.check) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>option.textContent += ' ✓';</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>select.appendChild(option);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>});</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 當選擇任務時</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function onTaskSelect() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const select = document.getElementById('taskSelect');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const taskIndex = select.value;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (taskIndex === '') {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('taskDetails').style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">                </span>currentTaskData = null;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentTaskData = allTasks[taskIndex];</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 顯示任務詳情</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('taskDate').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>currentTaskData.date ? new Date(currentTaskData.date).toLocaleString('zh-TW') : '未設定';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('taskDescription').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>currentTaskData.description || '無描述';</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const noteLink = document.getElementById('taskNoteLink');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentTaskData.noteUrl) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>noteLink.href = currentTaskData.noteUrl;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>noteLink.style.display = 'inline';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>noteLink.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('completedTomatoes').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>currentTaskData.tomato || 0;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('taskDetails').style.display = 'block';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 顯示狀態訊息</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function showStatus(message, type) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const statusDiv = document.getElementById('status');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>statusDiv.textContent = message;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>statusDiv.className = `status ${type}`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>statusDiv.style.display = 'block';</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>statusDiv.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 3000);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 開始番茄鐘</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function startPomodoro() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const taskSelect = document.getElementById('taskSelect');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const pomodoroTime = document.getElementById('pomodoroTime');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const expectedPomodoros = document.getElementById('expectedPomodoros');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!taskSelect.value || !currentTaskData) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('請選擇一個任務！', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!webhookUrl) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('請先設定Webhook URL！', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 設定計時器</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const minutes = parseInt(pomodoroTime.value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalSeconds = minutes * 60;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>remainingSeconds = totalSeconds;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalPomodoros = parseInt(expectedPomodoros.value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentPomodoro = 1;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startTime = new Date();</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 更新顯示</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('currentTaskName').textContent = currentTaskData.title;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('currentTaskInfo').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>`${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 切換到計時器畫面</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('setupSection').classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerSection').classList.remove('hidden');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateTimerDisplay();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 切換計時器狀態</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function toggleTimer() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const btn = document.getElementById('playPauseBtn');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (isRunning) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 暫停</p>
-<p class="p1"><span class="Apple-converted-space">                </span>clearInterval(currentTimer);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>isRunning = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>btn.textContent = '▶️ 開始';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 開始</p>
-<p class="p1"><span class="Apple-converted-space">                </span>startTimer();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>isRunning = true;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>btn.textContent = '⏸️ 暫停';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 開始計時</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function startTimer() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentTimer = setInterval(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>remainingSeconds--;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>updateTimerDisplay();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>updateProgress();</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (remainingSeconds &lt;= 0) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>completePomodoro();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 1000);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 更新計時器顯示</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function updateTimerDisplay() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const minutes = Math.floor(remainingSeconds / 60);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const seconds = remainingSeconds % 60;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerDisplay').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 更新進度條</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function updateProgress() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('progressBar').style.width = `${progress}%`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 完成番茄鐘</p>
-<p class="p1"><span class="Apple-converted-space">        </span>async function completePomodoro() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clearInterval(currentTimer);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isRunning = false;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 播放完成音效（簡單的視覺提示）</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerDisplay').style.color = '#28a745';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>showStatus('🎉 番茄鐘完成！', 'success');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 記錄到Notion</p>
-<p class="p1"><span class="Apple-converted-space">            </span>await recordToNotion();</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 檢查是否還有更多番茄要執行</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentPomodoro &lt; totalPomodoros) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>if (confirm('要開始下一顆番茄嗎？')) {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>startNextPomodoro();</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>resetToSetup();</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}, 2000);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>alert('🎉 所有番茄鐘都完成了！');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>resetToSetup();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}, 2000);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 開始下一顆番茄</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function startNextPomodoro() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentPomodoro++;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const minutes = parseInt(document.getElementById('pomodoroTime').value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalSeconds = minutes * 60;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>remainingSeconds = totalSeconds;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('currentTaskInfo').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>`${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerDisplay').style.color = '#333';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('playPauseBtn').textContent = '▶️ 開始';</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateTimerDisplay();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateProgress();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 重置計時器</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function resetTimer() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clearInterval(currentTimer);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isRunning = false;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const minutes = parseInt(document.getElementById('pomodoroTime').value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalSeconds = minutes * 60;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>remainingSeconds = totalSeconds;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerDisplay').style.color = '#333';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('playPauseBtn').textContent = '▶️ 開始';</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateTimerDisplay();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateProgress();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 停止番茄鐘</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function stopPomodoro() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (confirm('確定要停止當前的番茄鐘嗎？')) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>clearInterval(currentTimer);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>resetToSetup();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 返回設定畫面</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function resetToSetup() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clearInterval(currentTimer);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isRunning = false;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentPomodoro = 1;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('setupSection').classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('timerSection').classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('progressBar').style.width = '0%';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 記錄到Notion (透過n8n webhook)</p>
-<p class="p1"><span class="Apple-converted-space">        </span>async function recordToNotion() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!webhookUrl) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('未設定Webhook URL，無法記錄到Notion', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!currentTaskData) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('沒有選擇任務，無法記錄', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const data = {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>action: 'updateTask',</p>
-<p class="p1"><span class="Apple-converted-space">                </span>taskId: currentTaskData.id,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>taskName: currentTaskData.title,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>completedAt: new Date().toISOString(),</p>
-<p class="p1"><span class="Apple-converted-space">                </span>pomodoroNumber: currentPomodoro,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>totalPomodoros: totalPomodoros,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>duration: parseInt(document.getElementById('pomodoroTime').value),</p>
-<p class="p1"><span class="Apple-converted-space">                </span>startTime: startTime.toISOString(),</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 新增番茄數量（累加）</p>
-<p class="p1"><span class="Apple-converted-space">                </span>addTomato: 1,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 記錄花費時間</p>
-<p class="p1"><span class="Apple-converted-space">                </span>timeSpent: parseInt(document.getElementById('pomodoroTime').value)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const response = await fetch(webhookUrl, {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>method: 'POST',</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>headers: {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>'Content-Type': 'application/json'</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>},</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>body: JSON.stringify(data)</p>
-<p class="p1"><span class="Apple-converted-space">                </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (response.ok) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>showStatus('✅ 已記錄到Notion！', 'success');</p>
-<p class="p2"><span class="Apple-converted-space">                    </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>// 更新本地任務資料</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>if (currentTaskData) {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>currentTaskData.tomato = (currentTaskData.tomato || 0) + 1;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>document.getElementById('completedTomatoes').textContent = currentTaskData.tomato;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>throw new Error('記錄失敗');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} catch (error) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>console.error('記錄到Notion時發生錯誤:', error);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showStatus('❌ 記錄到Notion失敗', 'error');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+    <div class="container">
+        <h1>🍅 Notion番茄鐘</h1>
+        
+        <!-- Webhook設定 -->
+        <div class="webhook-config">
+            <h3>設定連接</h3>
+            <input type="text" id="webhookUrl" placeholder="請輸入n8n Webhook URL" 
+                   value="https://your-n8n-instance.app.n8n.cloud/webhook/pomodoro">
+            <input type="text" id="databaseId" placeholder="請輸入Notion資料庫ID" 
+                   value="">
+            <button onclick="saveWebhookConfig()">儲存設定</button>
+        </div>
+
+        <!-- 狀態顯示 -->
+        <div id="status" class="status" style="display: none;"></div>
+
+        <!-- 任務設定區 -->
+        <div id="setupSection" class="setup-section">
+            <div style="margin-bottom: 15px;">
+                <label for="taskSelect">選擇今天的任務：</label>
+                <select id="taskSelect">
+                    <option value="">-- 選擇任務 --</option>
+                </select>
+                <button onclick="refreshTasks()" style="margin-top: 10px; padding: 8px 16px; font-size: 14px;">🔄 重新載入任務</button>
+            </div>
+
+            <div id="taskDetails" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
+                <h4 style="margin-bottom: 10px; color: #333;">任務詳情</h4>
+                <p><strong>安排時間：</strong><span id="taskDate">-</span></p>
+                <p><strong>目標描述：</strong><span id="taskDescription">-</span></p>
+                <p><strong>筆記頁面：</strong><a id="taskNoteLink" href="#" target="_blank" style="color: #667eea;">開啟筆記</a></p>
+                <p><strong>已完成番茄：</strong><span id="completedTomatoes">0</span> 顆</p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="pomodoroTime">番茄鐘時間 (分鐘)：</label>
+                <input type="number" id="pomodoroTime" value="25" min="1" max="60">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="expectedPomodoros">預計執行幾顆番茄：</label>
+                <input type="number" id="expectedPomodoros" value="1" min="1" max="10">
+            </div>
+
+            <button onclick="startPomodoro()">開始番茄鐘</button>
+        </div>
+
+        <!-- 計時器區 -->
+        <div id="timerSection" class="setup-section hidden">
+            <div class="current-task">
+                <h3 id="currentTaskName">當前任務</h3>
+                <p id="currentTaskInfo">25分鐘 | 第1/1顆番茄</p>
+            </div>
+
+            <div class="timer-display" id="timerDisplay">25:00</div>
+            
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="controls">
+                <button id="playPauseBtn" onclick="toggleTimer()">▶️ 開始</button>
+                <button onclick="resetTimer()">🔄 重置</button>
+                <button onclick="stopPomodoro()">❌ 結束</button>
+            </div>
+
+            <p style="color: #666; font-size: 14px; margin-top: 15px;">
+                完成後會自動記錄到Notion
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let currentTimer = null;
+        let totalSeconds = 0;
+        let remainingSeconds = 0;
+        let isRunning = false;
+        let currentPomodoro = 1;
+        let totalPomodoros = 1;
+        let startTime = null;
+        let webhookUrl = '';
+
+        // 載入時檢查是否有儲存的webhook設定
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedWebhook = localStorage.getItem('webhookUrl');
+            const savedDatabaseId = localStorage.getItem('databaseId');
+            
+            if (savedWebhook) {
+                document.getElementById('webhookUrl').value = savedWebhook;
+                webhookUrl = savedWebhook;
+            }
+            
+            if (savedDatabaseId) {
+                document.getElementById('databaseId').value = savedDatabaseId;
+                databaseId = savedDatabaseId;
+                // 自動載入任務
+                refreshTasks();
+            }
+            
+            // 監聽任務選擇變化
+            document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
+        });
+
+        // 儲存webhook設定
+        function saveWebhookConfig() {
+            const webhookInput = document.getElementById('webhookUrl');
+            const databaseInput = document.getElementById('databaseId');
+            
+            webhookUrl = webhookInput.value.trim();
+            databaseId = databaseInput.value.trim();
+            
+            if (webhookUrl && databaseId) {
+                localStorage.setItem('webhookUrl', webhookUrl);
+                localStorage.setItem('databaseId', databaseId);
+                showStatus('設定已儲存！正在載入任務...', 'success');
+                
+                // 載入任務
+                refreshTasks();
+            } else {
+                showStatus('請輸入完整的Webhook URL和資料庫ID', 'error');
+            }
+        }
+
+        // 載入Notion任務
+        async function refreshTasks() {
+            if (!webhookUrl || !databaseId) {
+                showStatus('請先設定Webhook URL和資料庫ID', 'error');
+                return;
+            }
+
+            try {
+                showStatus('正在載入任務...', 'success');
+                
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getTasks',
+                        databaseId: databaseId,
+                        date: new Date().toISOString().split('T')[0] // 今天的日期 YYYY-MM-DD
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allTasks = data.tasks || [];
+                    updateTaskSelect();
+                    showStatus(`已載入 ${allTasks.length} 個任務`, 'success');
+                } else {
+                    throw new Error('載入任務失敗');
+                }
+            } catch (error) {
+                console.error('載入任務時發生錯誤:', error);
+                showStatus('❌ 載入任務失敗，請檢查設定', 'error');
+            }
+        }
+
+        // 更新任務選擇下拉選單
+        function updateTaskSelect() {
+            const select = document.getElementById('taskSelect');
+            
+            // 清空現有選項
+            select.innerHTML = '<option value="">-- 選擇任務 --</option>';
+            
+            // 添加今天的任務
+            allTasks.forEach((task, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = task.title;
+                
+                // 如果任務已完成，在後面加上勾號
+                if (task.check) {
+                    option.textContent += ' ✓';
+                }
+                
+                select.appendChild(option);
+            });
+        }
+
+        // 當選擇任務時
+        function onTaskSelect() {
+            const select = document.getElementById('taskSelect');
+            const taskIndex = select.value;
+            
+            if (taskIndex === '') {
+                document.getElementById('taskDetails').style.display = 'none';
+                currentTaskData = null;
+                return;
+            }
+            
+            currentTaskData = allTasks[taskIndex];
+            
+            // 顯示任務詳情
+            document.getElementById('taskDate').textContent = 
+                currentTaskData.date ? new Date(currentTaskData.date).toLocaleString('zh-TW') : '未設定';
+            document.getElementById('taskDescription').textContent = 
+                currentTaskData.description || '無描述';
+            
+            const noteLink = document.getElementById('taskNoteLink');
+            if (currentTaskData.noteUrl) {
+                noteLink.href = currentTaskData.noteUrl;
+                noteLink.style.display = 'inline';
+            } else {
+                noteLink.style.display = 'none';
+            }
+            
+            document.getElementById('completedTomatoes').textContent = 
+                currentTaskData.tomato || 0;
+            
+            document.getElementById('taskDetails').style.display = 'block';
+        }
+
+        // 顯示狀態訊息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 開始番茄鐘
+        function startPomodoro() {
+            const taskSelect = document.getElementById('taskSelect');
+            const pomodoroTime = document.getElementById('pomodoroTime');
+            const expectedPomodoros = document.getElementById('expectedPomodoros');
+
+            if (!taskSelect.value || !currentTaskData) {
+                showStatus('請選擇一個任務！', 'error');
+                return;
+            }
+
+            if (!webhookUrl) {
+                showStatus('請先設定Webhook URL！', 'error');
+                return;
+            }
+
+            // 設定計時器
+            const minutes = parseInt(pomodoroTime.value);
+            totalSeconds = minutes * 60;
+            remainingSeconds = totalSeconds;
+            totalPomodoros = parseInt(expectedPomodoros.value);
+            currentPomodoro = 1;
+            startTime = new Date();
+
+            // 更新顯示
+            document.getElementById('currentTaskName').textContent = currentTaskData.title;
+            document.getElementById('currentTaskInfo').textContent = 
+                `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
+
+            // 切換到計時器畫面
+            document.getElementById('setupSection').classList.add('hidden');
+            document.getElementById('timerSection').classList.remove('hidden');
+
+            updateTimerDisplay();
+        }
+
+        // 切換計時器狀態
+        function toggleTimer() {
+            const btn = document.getElementById('playPauseBtn');
+            
+            if (isRunning) {
+                // 暫停
+                clearInterval(currentTimer);
+                isRunning = false;
+                btn.textContent = '▶️ 開始';
+            } else {
+                // 開始
+                startTimer();
+                isRunning = true;
+                btn.textContent = '⏸️ 暫停';
+            }
+        }
+
+        // 開始計時
+        function startTimer() {
+            currentTimer = setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay();
+                updateProgress();
+
+                if (remainingSeconds <= 0) {
+                    completePomodoro();
+                }
+            }, 1000);
+        }
+
+        // 更新計時器顯示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 更新進度條
+        function updateProgress() {
+            const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        // 完成番茄鐘
+        async function completePomodoro() {
+            clearInterval(currentTimer);
+            isRunning = false;
+            
+            // 播放完成音效（簡單的視覺提示）
+            document.getElementById('timerDisplay').style.color = '#28a745';
+            showStatus('🎉 番茄鐘完成！', 'success');
+
+            // 記錄到Notion
+            await recordToNotion();
+
+            // 檢查是否還有更多番茄要執行
+            if (currentPomodoro < totalPomodoros) {
+                setTimeout(() => {
+                    if (confirm('要開始下一顆番茄嗎？')) {
+                        startNextPomodoro();
+                    } else {
+                        resetToSetup();
+                    }
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    alert('🎉 所有番茄鐘都完成了！');
+                    resetToSetup();
+                }, 2000);
+            }
+        }
+
+        // 開始下一顆番茄
+        function startNextPomodoro() {
+            currentPomodoro++;
+            const minutes = parseInt(document.getElementById('pomodoroTime').value);
+            totalSeconds = minutes * 60;
+            remainingSeconds = totalSeconds;
+            
+            document.getElementById('currentTaskInfo').textContent = 
+                `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
+            document.getElementById('timerDisplay').style.color = '#333';
+            document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+            
+            updateTimerDisplay();
+            updateProgress();
+        }
+
+        // 重置計時器
+        function resetTimer() {
+            clearInterval(currentTimer);
+            isRunning = false;
+            
+            const minutes = parseInt(document.getElementById('pomodoroTime').value);
+            totalSeconds = minutes * 60;
+            remainingSeconds = totalSeconds;
+            
+            document.getElementById('timerDisplay').style.color = '#333';
+            document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+            
+            updateTimerDisplay();
+            updateProgress();
+        }
+
+        // 停止番茄鐘
+        function stopPomodoro() {
+            if (confirm('確定要停止當前的番茄鐘嗎？')) {
+                clearInterval(currentTimer);
+                resetToSetup();
+            }
+        }
+
+        // 返回設定畫面
+        function resetToSetup() {
+            clearInterval(currentTimer);
+            isRunning = false;
+            currentPomodoro = 1;
+            
+            document.getElementById('setupSection').classList.remove('hidden');
+            document.getElementById('timerSection').classList.add('hidden');
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        // 記錄到Notion (透過n8n webhook)
+        async function recordToNotion() {
+            if (!webhookUrl) {
+                showStatus('未設定Webhook URL，無法記錄到Notion', 'error');
+                return;
+            }
+
+            if (!currentTaskData) {
+                showStatus('沒有選擇任務，無法記錄', 'error');
+                return;
+            }
+
+            const data = {
+                action: 'updateTask',
+                taskId: currentTaskData.id,
+                taskName: currentTaskData.title,
+                completedAt: new Date().toISOString(),
+                pomodoroNumber: currentPomodoro,
+                totalPomodoros: totalPomodoros,
+                duration: parseInt(document.getElementById('pomodoroTime').value),
+                startTime: startTime.toISOString(),
+                // 新增番茄數量（累加）
+                addTomato: 1,
+                // 記錄花費時間
+                timeSpent: parseInt(document.getElementById('pomodoroTime').value)
+            };
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showStatus('✅ 已記錄到Notion！', 'success');
+                    
+                    // 更新本地任務資料
+                    if (currentTaskData) {
+                        currentTaskData.tomato = (currentTaskData.tomato || 0) + 1;
+                        document.getElementById('completedTomatoes').textContent = currentTaskData.tomato;
+                    }
+                } else {
+                    throw new Error('記錄失敗');
+                }
+            } catch (error) {
+                console.error('記錄到Notion時發生錯誤:', error);
+                showStatus('❌ 記錄到Notion失敗', 'error');
+            }
+        }
+    </script>
 </body>
 </html>
