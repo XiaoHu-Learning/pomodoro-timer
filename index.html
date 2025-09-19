@@ -559,7 +559,7 @@
           document.getElementById('timerDisplay').style.color = '#333';
         }
         
-        // 把「回報成功後前端本地 +1」移除，改為回報後重新抓 DB
+        // 記錄到 Notion（成功就立刻顯示訊息並 return）
         async function recordToNotion() {
           if (!webhookUrl) { showStatus('未設定Webhook URL，無法記錄到Notion', 'error'); return; }
           if (!currentTaskData) { showStatus('沒有選擇任務，無法記錄', 'error'); return; }
@@ -584,30 +584,21 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
             });
-            
-            // 詳細除錯資訊
-            console.log('HTTP狀態碼:', res.status);
-            console.log('回應標頭:', res.headers);
-            
-            const responseText = await res.text();
-            console.log('原始回應:', responseText);
-            
-            let responseData;
-            try {
-              responseData = JSON.parse(responseText);
-            } catch (e) {
-              console.log('回應不是有效的JSON');
-              throw new Error('伺服器回應格式錯誤');
-            }
-            
-            if (res.status >= 200 && res.status < 300) {
+        
+            // 先用 status code 判定成功，成功就立刻顯示訊息並 return
+            if (res.ok) {
               showStatus('✅ 已記錄到Notion！', 'success');
-            } else {
-              throw new Error('記錄失敗：' + res.status);
+              return; // 直接結束，避免後續解析問題影響顯示
             }
+        
+            // 只有失敗才做詳細除錯與顯示 error
+            const text = await res.text().catch(() => '');
+            console.warn('記錄失敗：HTTP', res.status, text);
+            showStatus(`❌ 記錄到Notion失敗（${res.status}）`, 'error');
+        
           } catch (e) {
-            console.error('詳細錯誤:', e);
-            showStatus('❌ 記錄到Notion失敗', 'error');
+            console.error('記錄到Notion異常：', e);
+            showStatus('❌ 記錄到Notion失敗（網路/瀏覽器異常）', 'error');
           }
         }
         
