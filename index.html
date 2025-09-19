@@ -192,10 +192,11 @@
             </div>
 
             <div id="taskDetails" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-                <h4 style="margin-bottom: 10px; color: #333;">任務詳情</h4>
-                <p><strong>安排日期：</strong><span id="taskDate">-</span></p>
-                <p><strong>目標描述：</strong><span id="taskDescription">-</span></p>
-                <p><strong>已完成番茄：</strong><span id="completedTomatoes">0</span> 顆</p>
+              <h4 style="margin-bottom: 10px; color: #333;">任務詳情</h4>
+              <p><strong>安排日期：</strong><span id="taskDate">-</span></p>
+              <p><strong>目標描述：</strong><span id="taskDescription">-</span></p>
+              <p><strong>已完成番茄：</strong><span id="completedTomatoes">0</span> 顆</p>
+              <p><strong>累積時長：</strong><span id="totalDuration">0</span> 分鐘</p> <!-- ← 新增這行 -->
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -237,7 +238,7 @@
     </div>
 
     <script>
-        // 全域變數
+        // ========= 全域變數 =========
         let currentTimer = null;
         let totalSeconds = 0;
         let remainingSeconds = 0;
@@ -245,433 +246,306 @@
         let currentPomodoro = 1;
         let totalPomodoros = 1;
         let startTime = null;
+        
         let webhookUrl = '';
         let databaseId = '';
-        let currentTaskData = null;
-        let allTasks = [];
-
-        // 播放完成提醒音
-        function playCompletionSound() {
-          try {
-            // 使用音檔播放提醒聲
-            const audio = new Audio('./sounds/bell7.wav');
-            
-            // 設定音量 (0.0 到 1.0)
-            audio.volume = 0.7;
-            
-            // 播放音效
-            audio.play().then(() => {
-              console.log('提醒音效播放成功');
-            }).catch((error) => {
-              console.log('音效播放失敗:', error);
-              // 備用方案：使用Web Audio API
-              fallbackBeepSound();
-            });
-            
-          } catch (error) {
-            console.log('載入音檔失敗:', error);
-            // 備用方案：使用Web Audio API
-            fallbackBeepSound();
+        let allTasks = [];          // ← 補上：任務清單
+        let currentTaskData = null; // ← 補上：目前選中的任務
+        
+        // 小工具：分鐘轉易讀（可選）
+        const formatMinutes = (m = 0) => {
+          const n = Number(m) || 0;
+          const h = Math.floor(n / 60);
+          const mm = n % 60;
+          return h > 0 ? `${h} 小時 ${mm} 分` : `${mm} 分`;
+        };
+        
+        document.addEventListener('DOMContentLoaded', function() {
+          const savedWebhook = localStorage.getItem('webhookUrl');
+          const savedDatabaseId = localStorage.getItem('databaseId');
+        
+          if (savedWebhook) {
+            document.getElementById('webhookUrl').value = savedWebhook;
+            webhookUrl = savedWebhook;
+          }
+          if (savedDatabaseId) {
+            document.getElementById('databaseId').value = savedDatabaseId;
+            databaseId = savedDatabaseId;
+            refreshTasks();
+          }
+        
+          document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
+        });
+        
+        // 儲存設定
+        function saveWebhookConfig() {
+          const webhookInput = document.getElementById('webhookUrl');
+          const databaseInput = document.getElementById('databaseId');
+          webhookUrl = webhookInput.value.trim();
+          databaseId = databaseInput.value.trim();
+        
+          if (webhookUrl && databaseId) {
+            localStorage.setItem('webhookUrl', webhookUrl);
+            localStorage.setItem('databaseId', databaseId);
+            showStatus('設定已儲存！正在載入任務...', 'success');
+            refreshTasks();
+          } else {
+            showStatus('請輸入完整的Webhook URL和資料庫ID', 'error');
           }
         }
         
-        // 備用提醒音 (Web Audio API)
-        function fallbackBeepSound() {
+        // 重新載入任務（回傳資料，方便後續續用）
+        async function refreshTasks() {
+          if (!webhookUrl || !databaseId) {
+            showStatus('請先設定Webhook URL和資料庫ID', 'error');
+            return null;
+          }
           try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // 播放2聲短嗶
-            for (let i = 0; i < 2; i++) {
-              setTimeout(() => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.15);
-              }, i * 250);
-            }
-          } catch (error) {
-            console.log('備用音效也失敗:', error);
+            showStatus('正在載入任務...', 'success');
+            const res = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'getTasks',
+                databaseId,
+                date: new Date().toISOString().split('T')[0]
+              })
+            });
+            if (!res.ok) throw new Error('載入任務失敗');
+            const data = await res.json();
+            allTasks = data.tasks || [];
+            updateTaskSelect();
+            showStatus(`已載入 ${allTasks.length} 個任務`, 'success');
+            return data;
+          } catch (e) {
+            console.error(e);
+            showStatus('❌ 載入任務失敗，請檢查設定', 'error');
+            return null;
+          }
+        }
+        
+        // 依清單刷新下拉
+        function updateTaskSelect() {
+          const select = document.getElementById('taskSelect');
+          select.innerHTML = '<option value="">-- 選擇任務 --</option>';
+          allTasks.forEach((task, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = task.title + (task.check ? ' ✓' : '');
+            select.appendChild(opt);
+          });
+        }
+        
+        // 選擇任務時，顯示詳細資訊（全部來自 DB）
+        function onTaskSelect() {
+          const idx = document.getElementById('taskSelect').value;
+          if (idx === '') {
+            document.getElementById('taskDetails').style.display = 'none';
+            currentTaskData = null;
+            return;
+          }
+          currentTaskData = allTasks[idx];
+        
+          // 只顯示日期（若是 YYYY-MM-DD 就原樣）
+          let dateText = '未設定';
+          if (currentTaskData.date) {
+            // 若拿到純日期就用它；若是含時間也能轉
+            const dStr = currentTaskData.date.slice(0, 10);
+            const d = new Date(dStr + 'T00:00:00');
+            dateText = d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' });
+          }
+        
+          document.getElementById('taskDate').textContent = dateText;
+          document.getElementById('taskDescription').textContent = currentTaskData.description || '無描述';
+          document.getElementById('completedTomatoes').textContent = currentTaskData.tomato || 0;
+          document.getElementById('totalDuration').textContent = (currentTaskData.duration ?? 0); // 直接顯示分鐘
+          // 若想顯示 h 小時 m 分：改用 formatMinutes(currentTaskData.duration)
+        
+          document.getElementById('taskDetails').style.display = 'block';
+        }
+        
+        // 狀態提示
+        function showStatus(message, type) {
+          const el = document.getElementById('status');
+          el.textContent = message;
+          el.className = `status ${type}`;
+          el.style.display = 'block';
+          setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+        
+        // 開始番茄鐘
+        function startPomodoro() {
+          const taskSelect = document.getElementById('taskSelect');
+          if (!taskSelect.value || !currentTaskData) {
+            showStatus('請選擇一個任務！', 'error'); return;
+          }
+          if (!webhookUrl) {
+            showStatus('請先設定Webhook URL！', 'error'); return;
+          }
+          const minutes = parseInt(document.getElementById('pomodoroTime').value);
+          totalSeconds = minutes * 60;
+          remainingSeconds = totalSeconds;
+          totalPomodoros = parseInt(document.getElementById('expectedPomodoros').value);
+          currentPomodoro = 1;
+          startTime = new Date();
+        
+          document.getElementById('currentTaskName').textContent = currentTaskData.title;
+          document.getElementById('currentTaskInfo').textContent = `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
+          document.getElementById('setupSection').classList.add('hidden');
+          document.getElementById('timerSection').classList.remove('hidden');
+        
+          updateTimerDisplay();
+        }
+        
+        function toggleTimer() {
+          const btn = document.getElementById('playPauseBtn');
+          if (isRunning) {
+            clearInterval(currentTimer);
+            isRunning = false;
+            btn.textContent = '▶️ 開始';
+          } else {
+            startTimer();
+            isRunning = true;
+            btn.textContent = '⏸️ 暫停';
+          }
+        }
+        
+        function startTimer() {
+          currentTimer = setInterval(() => {
+            remainingSeconds--;
+            updateTimerDisplay();
+            updateProgress();
+            if (remainingSeconds <= 0) completePomodoro();
+          }, 1000);
+        }
+        
+        function updateTimerDisplay() {
+          const m = Math.floor(remainingSeconds / 60);
+          const s = remainingSeconds % 60;
+          document.getElementById('timerDisplay').textContent =
+            `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+        
+        function updateProgress() {
+          const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
+          document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+        
+        async function completePomodoro() {
+          clearInterval(currentTimer);
+          isRunning = false;
+          document.getElementById('timerDisplay').style.color = '#28a745';
+          showStatus('🎉 番茄鐘完成！', 'success');
+        
+          // 記錄到 Notion（交由 n8n 累積）
+          await recordToNotion();
+        
+          // 完成後**重新抓 DB**並更新畫面（不要在前端自行 +1）
+          await refreshAndReselect();
+        
+          if (currentPomodoro < totalPomodoros) {
+            setTimeout(() => {
+              if (confirm('要開始下一顆番茄嗎？')) {
+                startNextPomodoro();
+              } else {
+                resetToSetup();
+              }
+            }, 1200);
+          } else {
+            setTimeout(() => {
+              alert('🎉 所有番茄鐘都完成了！');
+              resetToSetup();
+            }, 1200);
+          }
+        }
+        
+        function startNextPomodoro() {
+          currentPomodoro++;
+          const minutes = parseInt(document.getElementById('pomodoroTime').value);
+          totalSeconds = minutes * 60;
+          remainingSeconds = totalSeconds;
+        
+          document.getElementById('currentTaskInfo').textContent =
+            `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
+          document.getElementById('timerDisplay').style.color = '#333';
+          document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+          updateTimerDisplay(); updateProgress();
+        }
+        
+        function resetTimer() {
+          clearInterval(currentTimer);
+          isRunning = false;
+          const minutes = parseInt(document.getElementById('pomodoroTime').value);
+          totalSeconds = minutes * 60;
+          remainingSeconds = totalSeconds;
+          document.getElementById('timerDisplay').style.color = '#333';
+          document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+          updateTimerDisplay(); updateProgress();
+        }
+        
+        function stopPomodoro() {
+          if (confirm('確定要停止當前的番茄鐘嗎？')) {
+            clearInterval(currentTimer);
+            resetToSetup();
+          }
+        }
+        
+        function resetToSetup() {
+          clearInterval(currentTimer);
+          isRunning = false;
+          currentPomodoro = 1;
+          document.getElementById('setupSection').classList.remove('hidden');
+          document.getElementById('timerSection').classList.add('hidden');
+          document.getElementById('progressBar').style.width = '0%';
+          document.getElementById('timerDisplay').style.color = '#333';
+        }
+        
+        // 把「回報成功後前端本地 +1」移除，改為回報後重新抓 DB
+        async function recordToNotion() {
+          if (!webhookUrl) { showStatus('未設定Webhook URL，無法記錄到Notion', 'error'); return; }
+          if (!currentTaskData) { showStatus('沒有選擇任務，無法記錄', 'error'); return; }
+        
+          const minutes = parseInt(document.getElementById('pomodoroTime').value);
+          const payload = {
+            action: 'updateTask',
+            taskId: currentTaskData.id,
+            taskName: currentTaskData.title,
+            completedAt: new Date().toISOString(),
+            pomodoroNumber: currentPomodoro,
+            totalPomodoros,
+            duration: minutes,            // 本次分鐘
+            startTime: startTime.toISOString(),
+            addTomato: 1,
+            timeSpent: minutes
+          };
+        
+          try {
+            const res = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('記錄失敗');
+            showStatus('✅ 已記錄到Notion！', 'success');
+          } catch (e) {
+            console.error(e);
+            showStatus('❌ 記錄到Notion失敗', 'error');
+          }
+        }
+        
+        // 重新抓清單並維持選取中的任務（用 id 對照）
+        async function refreshAndReselect() {
+          const prevId = currentTaskData?.id;
+          const data = await refreshTasks();
+          if (!data || !prevId) return;
+        
+          const idx = allTasks.findIndex(t => t.id === prevId);
+          if (idx >= 0) {
+            document.getElementById('taskSelect').value = String(idx);
+            onTaskSelect(); // 重新渲染詳情（這次的 tomato / duration 都是從 DB 來）
           }
         }
 
-        // 載入時檢查是否有儲存的webhook設定
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedWebhook = localStorage.getItem('webhookUrl');
-            const savedDatabaseId = localStorage.getItem('databaseId');
-            
-            if (savedWebhook) {
-                document.getElementById('webhookUrl').value = savedWebhook;
-                webhookUrl = savedWebhook;
-            }
-            
-            if (savedDatabaseId) {
-                document.getElementById('databaseId').value = savedDatabaseId;
-                databaseId = savedDatabaseId;
-                // 自動載入任務
-                refreshTasks();
-            }
-            
-            // 監聽任務選擇變化
-            document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
-        });
-
-        // 儲存webhook設定
-        function saveWebhookConfig() {
-            const webhookInput = document.getElementById('webhookUrl');
-            const databaseInput = document.getElementById('databaseId');
-            
-            webhookUrl = webhookInput.value.trim();
-            databaseId = databaseInput.value.trim();
-            
-            if (webhookUrl && databaseId) {
-                localStorage.setItem('webhookUrl', webhookUrl);
-                localStorage.setItem('databaseId', databaseId);
-                showStatus('設定已儲存！正在載入任務...', 'success');
-                
-                // 載入任務
-                refreshTasks();
-            } else {
-                showStatus('請輸入完整的Webhook URL和資料庫ID', 'error');
-            }
-        }
-
-        // 載入Notion任務
-        async function refreshTasks() {
-            if (!webhookUrl || !databaseId) {
-                showStatus('請先設定Webhook URL和資料庫ID', 'error');
-                return;
-            }
-
-            try {
-                showStatus('正在載入任務...', 'success');
-                
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'getTasks',
-                        databaseId: databaseId,
-                        date: new Date().toISOString().split('T')[0] // 今天的日期 YYYY-MM-DD
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    allTasks = data.tasks || [];
-                    updateTaskSelect();
-                    showStatus(`已載入 ${allTasks.length} 個任務`, 'success');
-                } else {
-                    throw new Error('載入任務失敗');
-                }
-            } catch (error) {
-                console.error('載入任務時發生錯誤:', error);
-                showStatus('❌ 載入任務失敗，請檢查設定', 'error');
-            }
-        }
-
-        // 更新任務選擇下拉選單
-        function updateTaskSelect() {
-            const select = document.getElementById('taskSelect');
-            
-            // 清空現有選項
-            select.innerHTML = '<option value="">-- 選擇任務 --</option>';
-            
-            // 添加今天的任務
-            allTasks.forEach((task, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = task.title;
-                
-                // 如果任務已完成，在後面加上勾號
-                if (task.check) {
-                    option.textContent += ' ✓';
-                }
-                
-                select.appendChild(option);
-            });
-        }
-
-        // 當選擇任務時
-        function onTaskSelect() {
-            const select = document.getElementById('taskSelect');
-            const taskIndex = select.value;
-            
-            if (taskIndex === '') {
-                document.getElementById('taskDetails').style.display = 'none';
-                currentTaskData = null;
-                return;
-            }
-            
-            currentTaskData = allTasks[taskIndex];
-            
-            // 顯示任務詳情 - 只顯示日期部分
-            let dateText = '未設定';
-            if (currentTaskData.date) {
-                const taskDate = new Date(currentTaskData.date);
-                // 只取日期部分，格式：2025/9/18
-                dateText = taskDate.toLocaleDateString('zh-TW', {
-                    year: 'numeric',
-                    month: 'numeric', 
-                    day: 'numeric'
-                });
-            }
-            
-            document.getElementById('taskDate').textContent = dateText;
-            document.getElementById('taskDescription').textContent = 
-                currentTaskData.description || '無描述';
-            
-            document.getElementById('completedTomatoes').textContent = 
-                currentTaskData.tomato || 0;
-            
-            document.getElementById('taskDetails').style.display = 'block';
-        }
-
-        // 顯示狀態訊息
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-            statusDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 3000);
-        }
-
-        // 開始番茄鐘
-        function startPomodoro() {
-            const taskSelect = document.getElementById('taskSelect');
-            const pomodoroTime = document.getElementById('pomodoroTime');
-            const expectedPomodoros = document.getElementById('expectedPomodoros');
-
-            if (!taskSelect.value || !currentTaskData) {
-                showStatus('請選擇一個任務！', 'error');
-                return;
-            }
-
-            if (!webhookUrl) {
-                showStatus('請先設定Webhook URL！', 'error');
-                return;
-            }
-
-            // 設定計時器
-            const minutes = parseInt(pomodoroTime.value);
-            totalSeconds = minutes * 60;
-            remainingSeconds = totalSeconds;
-            totalPomodoros = parseInt(expectedPomodoros.value);
-            currentPomodoro = 1;
-            startTime = new Date();
-
-            // 更新顯示
-            document.getElementById('currentTaskName').textContent = currentTaskData.title;
-            document.getElementById('currentTaskInfo').textContent = 
-                `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
-
-            // 切換到計時器畫面
-            document.getElementById('setupSection').classList.add('hidden');
-            document.getElementById('timerSection').classList.remove('hidden');
-
-            updateTimerDisplay();
-        }
-
-        // 切換計時器狀態
-        function toggleTimer() {
-            const btn = document.getElementById('playPauseBtn');
-            
-            if (isRunning) {
-                // 暫停
-                clearInterval(currentTimer);
-                isRunning = false;
-                btn.textContent = '▶️ 開始';
-            } else {
-                // 開始
-                startTimer();
-                isRunning = true;
-                btn.textContent = '⏸️ 暫停';
-            }
-        }
-
-        // 開始計時
-        function startTimer() {
-            currentTimer = setInterval(() => {
-                remainingSeconds--;
-                updateTimerDisplay();
-                updateProgress();
-
-                if (remainingSeconds <= 0) {
-                    completePomodoro();
-                }
-            }, 1000);
-        }
-
-        // 更新計時器顯示
-        function updateTimerDisplay() {
-            const minutes = Math.floor(remainingSeconds / 60);
-            const seconds = remainingSeconds % 60;
-            document.getElementById('timerDisplay').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        // 更新進度條
-        function updateProgress() {
-            const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
-            document.getElementById('progressBar').style.width = `${progress}%`;
-        }
-
-        // 完成番茄鐘
-        async function completePomodoro() {
-            clearInterval(currentTimer);
-            isRunning = false;
-            
-            // 播放完成音效（簡單的視覺提示）
-            document.getElementById('timerDisplay').style.color = '#28a745';
-            showStatus('🎉 番茄鐘完成！', 'success');
-            playCompletionSound();
-
-            // 記錄到Notion
-            await recordToNotion();
-
-            // 檢查是否還有更多番茄要執行
-            if (currentPomodoro < totalPomodoros) {
-                setTimeout(() => {
-                    if (confirm('要開始下一顆番茄嗎？')) {
-                        startNextPomodoro();
-                    } else {
-                        resetToSetup();
-                    }
-                }, 2000);
-            } else {
-                setTimeout(() => {
-                    alert('🎉 所有番茄鐘都完成了！');
-                    resetToSetup();
-                }, 2000);
-            }
-        }
-
-        // 開始下一顆番茄
-        function startNextPomodoro() {
-            currentPomodoro++;
-            const minutes = parseInt(document.getElementById('pomodoroTime').value);
-            totalSeconds = minutes * 60;
-            remainingSeconds = totalSeconds;
-            
-            document.getElementById('currentTaskInfo').textContent = 
-                `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
-            document.getElementById('timerDisplay').style.color = '#333';
-            document.getElementById('playPauseBtn').textContent = '▶️ 開始';
-            
-            updateTimerDisplay();
-            updateProgress();
-        }
-
-        // 重置計時器
-        function resetTimer() {
-            clearInterval(currentTimer);
-            isRunning = false;
-            
-            const minutes = parseInt(document.getElementById('pomodoroTime').value);
-            totalSeconds = minutes * 60;
-            remainingSeconds = totalSeconds;
-            
-            document.getElementById('timerDisplay').style.color = '#333';
-            document.getElementById('playPauseBtn').textContent = '▶️ 開始';
-            
-            updateTimerDisplay();
-            updateProgress();
-        }
-
-        // 停止番茄鐘
-        function stopPomodoro() {
-            if (confirm('確定要停止當前的番茄鐘嗎？')) {
-                clearInterval(currentTimer);
-                resetToSetup();
-            }
-        }
-
-        // 返回設定畫面
-        function resetToSetup() {
-            clearInterval(currentTimer);
-            isRunning = false;
-            currentPomodoro = 1;
-            
-            document.getElementById('setupSection').classList.remove('hidden');
-            document.getElementById('timerSection').classList.add('hidden');
-            document.getElementById('progressBar').style.width = '0%';
-        }
-
-        // 記錄到Notion (透過n8n webhook)
-        async function recordToNotion() {
-            if (!webhookUrl) {
-                showStatus('未設定Webhook URL，無法記錄到Notion', 'error');
-                return;
-            }
-
-            if (!currentTaskData) {
-                showStatus('沒有選擇任務，無法記錄', 'error');
-                return;
-            }
-
-            const data = {
-                action: 'updateTask',
-                taskId: currentTaskData.id,
-                taskName: currentTaskData.title,
-                completedAt: new Date().toISOString(),
-                pomodoroNumber: currentPomodoro,
-                totalPomodoros: totalPomodoros,
-                duration: parseInt(document.getElementById('pomodoroTime').value),
-                startTime: startTime.toISOString(),
-                // 記錄花費時間和新的總番茄數
-                completedAt: new Date().toISOString(),
-                newTomatoTotal: (currentTaskData.tomato || 0) + 1, // 計算新的總數
-                duration: parseInt(document.getElementById('pomodoroTime').value)
-            };
-
-            try {
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showStatus('✅ 已記錄到Notion！', 'success');
-                    
-                    // 重新載入任務資料以取得最新的番茄數量
-                    await refreshTasks();
-                    
-                    // 重新顯示任務詳情
-                    if (currentTaskData) {
-                        const taskIndex = Array.from(document.getElementById('taskSelect').options)
-                            .findIndex(option => option.value !== '' && allTasks[option.value]?.id === currentTaskData.id);
-                        
-                        if (taskIndex > 0) {
-                            document.getElementById('taskSelect').value = taskIndex - 1;
-                            onTaskSelect();
-                        }
-                    }
-                } else {
-                    throw new Error('記錄失敗');
-                }
-            } catch (error) {
-                console.error('記錄到Notion時發生錯誤:', error);
-                showStatus('❌ 記錄到Notion失敗', 'error');
-            }
-        }
     </script>
 </body>
 </html>
