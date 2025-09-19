@@ -569,7 +569,7 @@
             completedAt: new Date().toISOString(),
             pomodoroNumber: currentPomodoro,
             totalPomodoros,
-            duration: minutes,            // 本次分鐘
+            duration: minutes,
             startTime: startTime.toISOString(),
             addTomato: 1,
             timeSpent: minutes
@@ -581,10 +581,29 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
             });
-            if (!res.ok) throw new Error('記錄失敗');
-            showStatus('✅ 已記錄到Notion！', 'success');
+            
+            // 詳細除錯資訊
+            console.log('HTTP狀態碼:', res.status);
+            console.log('回應標頭:', res.headers);
+            
+            const responseText = await res.text();
+            console.log('原始回應:', responseText);
+            
+            let responseData;
+            try {
+              responseData = JSON.parse(responseText);
+            } catch (e) {
+              console.log('回應不是有效的JSON');
+              throw new Error('伺服器回應格式錯誤');
+            }
+            
+            if (res.ok) {
+              showStatus('✅ 已記錄到Notion！', 'success');
+            } else {
+              throw new Error('記錄失敗：' + res.status);
+            }
           } catch (e) {
-            console.error(e);
+            console.error('詳細錯誤:', e);
             showStatus('❌ 記錄到Notion失敗', 'error');
           }
         }
