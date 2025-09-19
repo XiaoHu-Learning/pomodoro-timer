@@ -421,10 +421,13 @@
         // 狀態提示
         function showStatus(message, type) {
           const el = document.getElementById('status');
+          console.log('[STATUS]', type, message); // 方便你在 Console 確認是否有呼叫
           el.textContent = message;
           el.className = `status ${type}`;
           el.style.display = 'block';
-          setTimeout(() => { el.style.display = 'none'; }, 3000);
+          // 顯示 5 秒
+          clearTimeout(showStatus._t);
+          showStatus._t = setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
         
         // 開始番茄鐘
