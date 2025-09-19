@@ -597,7 +597,7 @@
               throw new Error('伺服器回應格式錯誤');
             }
             
-            if (res.ok) {
+            if (res.status >= 200 && res.status < 300) {
               showStatus('✅ 已記錄到Notion！', 'success');
             } else {
               throw new Error('記錄失敗：' + res.status);
