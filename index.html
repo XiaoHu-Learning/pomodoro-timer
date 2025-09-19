@@ -250,6 +250,60 @@
         let currentTaskData = null;
         let allTasks = [];
 
+        // 播放完成提醒音
+        function playCompletionSound() {
+          try {
+            // 使用音檔播放提醒聲
+            const audio = new Audio('./sounds/bell7.wav');
+            
+            // 設定音量 (0.0 到 1.0)
+            audio.volume = 0.7;
+            
+            // 播放音效
+            audio.play().then(() => {
+              console.log('提醒音效播放成功');
+            }).catch((error) => {
+              console.log('音效播放失敗:', error);
+              // 備用方案：使用Web Audio API
+              fallbackBeepSound();
+            });
+            
+          } catch (error) {
+            console.log('載入音檔失敗:', error);
+            // 備用方案：使用Web Audio API
+            fallbackBeepSound();
+          }
+        }
+        
+        // 備用提醒音 (Web Audio API)
+        function fallbackBeepSound() {
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 播放2聲短嗶
+            for (let i = 0; i < 2; i++) {
+              setTimeout(() => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.15);
+              }, i * 250);
+            }
+          } catch (error) {
+            console.log('備用音效也失敗:', error);
+          }
+        }
+
         // 載入時檢查是否有儲存的webhook設定
         document.addEventListener('DOMContentLoaded', function() {
             const savedWebhook = localStorage.getItem('webhookUrl');
@@ -484,6 +538,7 @@
             // 播放完成音效（簡單的視覺提示）
             document.getElementById('timerDisplay').style.color = '#28a745';
             showStatus('🎉 番茄鐘完成！', 'success');
+            playCompletionSound();
 
             // 記錄到Notion
             await recordToNotion();
