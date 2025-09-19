@@ -349,13 +349,13 @@
         }
         
         // 重新載入任務（回傳資料，方便後續續用）
-        async function refreshTasks() {
+        async function refreshTasks(silent = false) {
           if (!webhookUrl || !databaseId) {
-            showStatus('請先設定Webhook URL和資料庫ID', 'error');
+            if (!silent) showStatus('請先設定Webhook URL和資料庫ID', 'error');
             return null;
           }
           try {
-            showStatus('正在載入任務...', 'success');
+            if (!silent) showStatus('正在載入任務...', 'success');
             const res = await fetch(webhookUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -369,14 +369,15 @@
             const data = await res.json();
             allTasks = data.tasks || [];
             updateTaskSelect();
-            showStatus(`已載入 ${allTasks.length} 個任務`, 'success');
+            if (!silent) showStatus(`已載入 ${allTasks.length} 個任務`, 'success');
             return data;
           } catch (e) {
             console.error(e);
-            showStatus('❌ 載入任務失敗，請檢查設定', 'error');
+            if (!silent) showStatus('❌ 載入任務失敗，請檢查設定', 'error');
             return null;
           }
         }
+
         
         // 依清單刷新下拉
         function updateTaskSelect() {
@@ -559,7 +560,7 @@
           document.getElementById('timerDisplay').style.color = '#333';
         }
         
-        // 記錄到 Notion（成功就立刻顯示訊息並 return）
+        // 記錄到 Notion（成功就立刻顯示訊息，之後靜默刷新畫面）
         async function recordToNotion() {
           if (!webhookUrl) { showStatus('未設定Webhook URL，無法記錄到Notion', 'error'); return; }
           if (!currentTaskData) { showStatus('沒有選擇任務，無法記錄', 'error'); return; }
@@ -585,13 +586,14 @@
               body: JSON.stringify(payload)
             });
         
-            // 先用 status code 判定成功，成功就立刻顯示訊息並 return
             if (res.ok) {
+              // ✅ 先讓使用者看到成功提示
               showStatus('✅ 已記錄到Notion！', 'success');
-              return; // 直接結束，避免後續解析問題影響顯示
+              // 再「靜默」刷新清單與詳情
+              refreshAndReselect(); // 不 await，避免阻塞 UI
+              return;
             }
         
-            // 只有失敗才做詳細除錯與顯示 error
             const text = await res.text().catch(() => '');
             console.warn('記錄失敗：HTTP', res.status, text);
             showStatus(`❌ 記錄到Notion失敗（${res.status}）`, 'error');
@@ -601,19 +603,21 @@
             showStatus('❌ 記錄到Notion失敗（網路/瀏覽器異常）', 'error');
           }
         }
+
         
         // 重新抓清單並維持選取中的任務（用 id 對照）
         async function refreshAndReselect() {
           const prevId = currentTaskData?.id;
-          const data = await refreshTasks();
+          const data = await refreshTasks(true); // ← 靜默刷新
           if (!data || !prevId) return;
         
           const idx = allTasks.findIndex(t => t.id === prevId);
           if (idx >= 0) {
             document.getElementById('taskSelect').value = String(idx);
-            onTaskSelect(); // 重新渲染詳情（這次的 tomato / duration 都是從 DB 來）
+            onTaskSelect(); // 重新渲染詳情（這次 tomato/duration 都從 DB 來）
           }
         }
+
 
     </script>
 </body>
