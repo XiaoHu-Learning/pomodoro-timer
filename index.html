@@ -170,12 +170,17 @@
         
         <!-- Webhook設定 -->
         <div class="webhook-config">
-            <h3>設定連接</h3>
-            <input type="text" id="webhookUrl" placeholder="請輸入n8n Webhook URL" 
-                   value="https://your-n8n-instance.app.n8n.cloud/webhook/pomodoro">
-            <input type="text" id="databaseId" placeholder="請輸入Notion資料庫ID" 
-                   value="">
-            <button onclick="saveWebhookConfig()">儲存設定</button>
+          <h3>設定連接</h3>
+          <label for="webhookUrl">n8n Webhook URL</label>
+          <input
+            type="url"
+            id="webhookUrl"
+            placeholder="例如：https://n8n-xiaohu.zeabur.app/webhook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            inputmode="url"
+            pattern="https?://.+/(webhook|webhook-test)/[A-Za-z0-9-]+"
+            required
+          >
+          <button onclick="saveWebhookConfig()">儲存設定</button>
         </div>
 
         <!-- 狀態顯示 -->
