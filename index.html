@@ -248,7 +248,6 @@
         let startTime = null;
         
         let webhookUrl = '';
-        let databaseId = '';
         let allTasks = [];          // ← 補上：任務清單
         let currentTaskData = null; // ← 補上：目前選中的任務
 
@@ -361,42 +360,35 @@
         
         document.addEventListener('DOMContentLoaded', function() {
           const savedWebhook = localStorage.getItem('webhookUrl');
-          const savedDatabaseId = localStorage.getItem('databaseId');
-        
           if (savedWebhook) {
             document.getElementById('webhookUrl').value = savedWebhook;
             webhookUrl = savedWebhook;
+            refreshTasks(); // 直接載入
           }
-          if (savedDatabaseId) {
-            document.getElementById('databaseId').value = savedDatabaseId;
-            databaseId = savedDatabaseId;
-            refreshTasks();
-          }
-        
           document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
         });
         
-        // 儲存設定
         function saveWebhookConfig() {
           const webhookInput = document.getElementById('webhookUrl');
-          const databaseInput = document.getElementById('databaseId');
           webhookUrl = webhookInput.value.trim();
-          databaseId = databaseInput.value.trim();
         
-          if (webhookUrl && databaseId) {
-            localStorage.setItem('webhookUrl', webhookUrl);
-            localStorage.setItem('databaseId', databaseId);
-            showStatus('設定已儲存！正在載入任務...', 'success');
-            refreshTasks();
-          } else {
-            showStatus('請輸入完整的Webhook URL和資料庫ID', 'error');
+          // 簡單驗證：必須是 /webhook 或 /webhook-test
+          const ok = /^https?:\/\/.+\/webhook(-test)?\/[A-Za-z0-9-]+/.test(webhookUrl);
+          if (!ok) {
+            showStatus('Webhook URL 格式不對（應該像 https://…/webhook/xxxx）', 'error');
+            return;
           }
+        
+          localStorage.setItem('webhookUrl', webhookUrl);
+          showStatus('設定已儲存！正在載入任務...', 'success');
+          refreshTasks();
         }
+
         
         // 重新載入任務（回傳資料，方便後續續用）
         async function refreshTasks(silent = false) {
-          if (!webhookUrl || !databaseId) {
-            if (!silent) showStatus('請先設定Webhook URL和資料庫ID', 'error');
+          if (!webhookUrl) {
+            if (!silent) showStatus('請先設定Webhook URL', 'error');
             return null;
           }
           try {
@@ -406,8 +398,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'getTasks',
-                databaseId,
-                date: new Date().toISOString().split('T')[0]
+                date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
               })
             });
             if (!res.ok) throw new Error('載入任務失敗');
