@@ -657,14 +657,26 @@
     <script>
         // ========= 自訂確認對話框功能 =========
         let confirmCallback = null;
+        let cancelCallback = null;
 
-        function showConfirm(message, onConfirm) {
+        function showConfirm(message, onConfirm, onCancel = null) {
             const overlay = document.getElementById('confirmOverlay');
             const confirmBox = document.getElementById('customConfirm');
             const messageEl = document.getElementById('confirmMessage');
+            const cancelBtn = confirmBox.querySelector('.confirm-btn.secondary');
             
             messageEl.textContent = message;
             confirmCallback = onConfirm;
+            cancelCallback = onCancel;
+            
+            // 如果沒有取消回調，修改按鈕文字
+            if (onCancel) {
+                cancelBtn.textContent = '取消';
+                cancelBtn.style.display = 'block';
+            } else {
+                cancelBtn.textContent = '稍後';
+                cancelBtn.style.display = 'block';
+            }
             
             overlay.classList.add('show');
             confirmBox.classList.add('show');
@@ -676,14 +688,30 @@
             
             overlay.classList.remove('show');
             confirmBox.classList.remove('show');
+            
+            // 如果有取消回調，執行它
+            if (cancelCallback) {
+                cancelCallback();
+            }
+            
             confirmCallback = null;
+            cancelCallback = null;
         }
 
         function confirmAction() {
             if (confirmCallback) {
                 confirmCallback();
             }
-            hideConfirm();
+            
+            // 清空回調
+            confirmCallback = null;
+            cancelCallback = null;
+            
+            // 隱藏對話框
+            const overlay = document.getElementById('confirmOverlay');
+            const confirmBox = document.getElementById('customConfirm');
+            overlay.classList.remove('show');
+            confirmBox.classList.remove('show');
         }
 
         // ========= 設定面板功能 =========
@@ -1035,16 +1063,24 @@
         
           if (currentPomodoro < totalPomodoros) {
             setTimeout(() => {
-              if (confirm('要開始下一顆番茄嗎？')) {
+              showConfirm('要開始下一顆番茄嗎？', function() {
                 startNextPomodoro();
-              } else {
+              }, function() {
                 resetToSetup();
-              }
+              });
             }, 1200);
           } else {
             setTimeout(() => {
-              alert('🎉 所有番茄鐘都完成了！');
-              resetToSetup();
+              showConfirm('🎉 所有番茄鐘都完成了！', function() {
+                resetToSetup();
+              });
+              // 3秒後自動關閉
+              setTimeout(() => {
+                if (document.getElementById('customConfirm').classList.contains('show')) {
+                  hideConfirm();
+                  resetToSetup();
+                }
+              }, 3000);
             }, 1200);
           }
         }
@@ -1074,10 +1110,12 @@
         }
         
         function stopPomodoro() {
-          if (confirm('確定要停止當前的番茄鐘嗎？')) {
+          showConfirm('確定要停止當前的番茄鐘嗎？', function() {
             clearInterval(currentTimer);
             resetToSetup();
-          }
+          }, function() {
+            // 取消時不做任何事，繼續計時
+          });
         }
         
         function resetToSetup() {
