@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notion番茄鐘</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -11,13 +11,86 @@
             box-sizing: border-box;
         }
 
+        :root {
+            /* 主題1: 紫藍漸層 (預設) */
+            --bg-gradient-1: #667eea;
+            --bg-gradient-2: #764ba2;
+            --primary-color: #667eea;
+            --primary-hover: rgba(102, 126, 234, 0.4);
+            --border-accent: #667eea;
+        }
+
         body {
             font-family: 'Microsoft JhengHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.3s ease;
+            padding: 20px 0;
+        }
+
+        /* 主題選擇器 */
+        .theme-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.8);
+        }
+
+        .theme-btn.active {
+            border-color: white;
+            border-width: 3px;
+        }
+
+        /* 主題1: 紫藍漸層 */
+        .theme-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* 主題2: 橙紅漸層 */
+        .theme-2 {
+            background: linear-gradient(135deg, #ff7b7b 0%, #ff6b35 100%);
+        }
+
+        /* 主題3: 綠青漸層 */
+        .theme-3 {
+            background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%);
+        }
+
+        /* 動態主題變數 */
+        body.theme-orange {
+            --bg-gradient-1: #ff7b7b;
+            --bg-gradient-2: #ff6b35;
+            --primary-color: #ff6b35;
+            --primary-hover: rgba(255, 107, 53, 0.4);
+            --border-accent: #ff6b35;
+        }
+
+        body.theme-blue {
+            --bg-gradient-1: #56ccf2;
+            --bg-gradient-2: #2f80ed;
+            --primary-color: #2f80ed;
+            --primary-hover: rgba(47, 128, 237, 0.4);
+            --border-accent: #2f80ed;
         }
 
         .container {
@@ -28,6 +101,215 @@
             text-align: center;
             max-width: 400px;
             width: 90%;
+            position: relative;
+        }
+
+        /* 設定按鈕 */
+        .settings-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .settings-btn:hover {
+            color: #333;
+        }
+
+        .settings-btn:hover i {
+            transform: scale(1.2);
+        }
+
+        .settings-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        /* 遮罩背景 */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .settings-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 設定面板 - 修改為中央彈出視窗 */
+        .settings-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 90%;
+            max-width: 450px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow-y: auto;
+        }
+
+        .settings-panel.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .settings-header h3 {
+            color: #333;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .close-settings {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-settings:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* 設定區塊 */
+        .settings-section {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .settings-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+
+        /* 主題選擇器 (在設定面板內) */
+        .theme-selector-panel {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-start;
+        }
+
+        .theme-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-option:hover {
+            transform: translateY(-2px);
+        }
+
+        .theme-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .theme-circle.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        .theme-circle.theme-default {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .theme-circle.theme-orange {
+            background: linear-gradient(135deg, #ff7b7b 0%, #ff6b35 100%);
+        }
+
+        .theme-circle.theme-blue {
+            background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%);
+        }
+
+        .theme-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Webhook設定 (在設定面板內) */
+        .webhook-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .webhook-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .webhook-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        .webhook-section input:focus {
+            outline: none;
+            border-color: var(--primary-color);
         }
 
         h1 {
@@ -74,7 +356,7 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--border-accent);
         }
 
         .current-task h3 {
@@ -95,7 +377,7 @@
         }
 
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
             color: white;
             border: none;
             padding: 12px 24px;
@@ -107,7 +389,7 @@
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px var(--primary-hover);
         }
 
         button:disabled {
@@ -126,22 +408,10 @@
         }
 
         .progress-bar {
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            background: linear-gradient(90deg, var(--bg-gradient-1), var(--bg-gradient-2));
             height: 100%;
             width: 0%;
             transition: width 1s ease;
-        }
-
-        .webhook-config {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .webhook-config input {
-            margin-bottom: 10px;
         }
 
         .status {
@@ -162,26 +432,77 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        /* 響應式設計 */
+        @media (max-width: 480px) {
+            .settings-panel {
+                padding: 20px;
+            }
+            
+            .theme-selector-panel {
+                justify-content: center;
+            }
+            
+            .theme-circle {
+                width: 45px;
+                height: 45px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍅 Notion番茄鐘</h1>
-        
-        <!-- Webhook設定 -->
-        <div class="webhook-config">
-          <h3>設定連接</h3>
-          <label for="webhookUrl">n8n Webhook URL</label>
-          <input
-            type="url"
-            id="webhookUrl"
-            placeholder="例如：https://n8n-xiaohu.zeabur.app/webhook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            inputmode="url"
-            pattern="https?://.+/(webhook|webhook-test)/[A-Za-z0-9-]+"
-            required
-          >
-          <button onclick="saveWebhookConfig()">儲存設定</button>
+    <!-- 遮罩背景 -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+    
+    <!-- 設定面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>設定</h3>
+            <button class="close-settings" onclick="toggleSettings()">✕</button>
         </div>
+        
+        <!-- 主題設定 -->
+        <div class="settings-section">
+            <h4>外觀主題</h4>
+            <div class="theme-selector-panel">
+                <div class="theme-option" onclick="changeTheme('default')">
+                    <div class="theme-circle theme-default active" id="theme-default"></div>
+                    <div class="theme-label">紫藍</div>
+                </div>
+                <div class="theme-option" onclick="changeTheme('orange')">
+                    <div class="theme-circle theme-orange" id="theme-orange"></div>
+                    <div class="theme-label">橙紅</div>
+                </div>
+                <div class="theme-option" onclick="changeTheme('blue')">
+                    <div class="theme-circle theme-blue" id="theme-blue"></div>
+                    <div class="theme-label">藍色</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 連接設定 -->
+        <div class="settings-section">
+            <h4>連接設定</h4>
+            <div class="webhook-section">
+                <label for="webhookUrlPanel">n8n Webhook URL</label>
+                <input
+                    type="url"
+                    id="webhookUrlPanel"
+                    placeholder="例如：https://n8n-xiaohu.zeabur.app/webhook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    inputmode="url"
+                >
+                <button onclick="saveWebhookConfigFromPanel()">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 設定按鈕 -->
+        <button class="settings-btn" onclick="toggleSettings()">
+            <i class="fas fa-cog"></i>
+        </button>
+        
+        <h1>🍅 Notion番茄鐘</h1>
 
         <!-- 狀態顯示 -->
         <div id="status" class="status" style="display: none;"></div>
@@ -201,7 +522,7 @@
               <p><strong>安排日期：</strong><span id="taskDate">-</span></p>
               <p><strong>目標描述：</strong><span id="taskDescription">-</span></p>
               <p><strong>已完成番茄：</strong><span id="completedTomatoes">0</span> 顆</p>
-              <p><strong>累積時長：</strong><span id="totalDuration">0</span> 分鐘</p> <!-- ← 新增這行 -->
+              <p><strong>累積時長：</strong><span id="totalDuration">0</span> 分鐘</p>
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -243,6 +564,78 @@
     </div>
 
     <script>
+        // ========= 設定面板功能 =========
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            const isOpen = panel.classList.contains('open');
+            
+            if (isOpen) {
+                // 關閉設定面板
+                panel.classList.remove('open');
+                overlay.classList.remove('show');
+            } else {
+                // 開啟設定面板
+                panel.classList.add('open');
+                overlay.classList.add('show');
+                
+                // 同步 webhook URL
+                const webhookInput = document.getElementById('webhookUrlPanel');
+                webhookInput.value = webhookUrl || '';
+            }
+        }
+
+        // ========= 主題切換功能 =========
+        function changeTheme(themeName) {
+            const body = document.body;
+            const themeCircles = document.querySelectorAll('.theme-circle');
+            
+            // 移除所有主題class
+            body.classList.remove('theme-orange', 'theme-blue');
+            
+            // 移除所有圓圈的active狀態
+            themeCircles.forEach(circle => circle.classList.remove('active'));
+            
+            // 根據選擇應用主題
+            switch(themeName) {
+                case 'orange':
+                    body.classList.add('theme-orange');
+                    document.getElementById('theme-orange').classList.add('active');
+                    break;
+                case 'blue':
+                    body.classList.add('theme-blue');
+                    document.getElementById('theme-blue').classList.add('active');
+                    break;
+                default: // 'default'
+                    document.getElementById('theme-default').classList.add('active');
+                    break;
+            }
+            
+            // 儲存主題設定
+            localStorage.setItem('selectedTheme', themeName);
+        }
+
+        // 從設定面板儲存 Webhook 設定
+        function saveWebhookConfigFromPanel() {
+            const webhookInput = document.getElementById('webhookUrlPanel');
+            webhookUrl = webhookInput.value.trim();
+        
+            const ok = /^https?:\/\/.+\/webhook(-test)?\/[A-Za-z0-9-]+/.test(webhookUrl);
+            if (!ok) {
+                showStatus('Webhook URL 格式不對（應該像 https://…/webhook/xxxx）', 'error');
+                return;
+            }
+        
+            localStorage.setItem('webhookUrl', webhookUrl);
+            showStatus('設定已儲存！正在載入任務...', 'success');
+            
+            // 關閉設定面板
+            toggleSettings();
+            
+            refreshTasks();
+        }
+
         // ========= 全域變數 =========
         let currentTimer = null;
         let totalSeconds = 0;
@@ -253,15 +646,15 @@
         let startTime = null;
         
         let webhookUrl = '';
-        let allTasks = [];          // ← 補上：任務清單
-        let currentTaskData = null; // ← 補上：目前選中的任務
+        let allTasks = [];
+        let currentTaskData = null;
 
         // ====== 全域音訊資源 ======
-        let bellAudio = null;           // <audio> 元素（同一顆重複用）
-        let audioCtx = null;            // Web Audio（作為備援）
-        let audioUnlocked = false;      // 是否已在使用者手勢中解鎖
+        let bellAudio = null;
+        let audioCtx = null;
+        let audioUnlocked = false;
         
-        // 小工具：分鐘轉易讀（可選）
+        // 小工具：分鐘轉易讀
         const formatMinutes = (m = 0) => {
           const n = Number(m) || 0;
           const h = Math.floor(n / 60);
@@ -273,52 +666,45 @@
         async function unlockAudio() {
           try {
             if (!bellAudio) {
-              bellAudio = new Audio('./sounds/bell7.wav'); // 確認路徑正確
+              bellAudio = new Audio('./sounds/bell7.wav');
               bellAudio.preload = 'auto';
               bellAudio.loop = false;
-              bellAudio.playsInline = true; // iOS 必加
+              bellAudio.playsInline = true;
             }
             if (!audioCtx) {
               audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
         
-            // 1) 讓 AudioContext 從 suspended -> running
             if (audioCtx.state === 'suspended') {
               await audioCtx.resume();
             }
         
-            // 2) 用 <audio> 做一次「無聲解鎖」：有些瀏覽器需要先在手勢中播放/暫停
-            bellAudio.volume = 0.001; // 幾乎聽不到
+            bellAudio.volume = 0.001;
             try { await bellAudio.play(); } catch (_) {}
             bellAudio.pause();
             bellAudio.currentTime = 0;
         
             audioUnlocked = true;
-            // console.log('Audio unlocked');
           } catch (e) {
             console.log('音訊解鎖失敗：', e);
           }
         }
         
-        // 你可以在多個入口加入一次性監聽（只會跑一次）
         document.addEventListener('pointerdown', unlockAudio, { once: true });
         document.addEventListener('touchstart', unlockAudio, { once: true });
         document.addEventListener('click', unlockAudio, { once: true });
         
-        // ====== 播放完成提醒音（已解鎖後）======
+        // ====== 播放完成提醒音 ======
         async function playCompletionSound() {
           try {
             if (!audioUnlocked) {
-              // 萬一使用者沒有先點擊任何東西，嘗試一次（仍可能被擋）
               await unlockAudio();
             }
         
-            // 先確保 AudioContext 不是掛起
             if (audioCtx && audioCtx.state === 'suspended') {
               await audioCtx.resume();
             }
         
-            // 走 <audio>：多數情況最穩定
             if (bellAudio) {
               bellAudio.pause();
               bellAudio.currentTime = 0;
@@ -327,18 +713,16 @@
               return;
             }
         
-            // 備援：用 Web Audio 產生嗶聲
             await fallbackBeepSound();
           } catch (err) {
-            console.log('播放音效失敗，改用備援：', err);
+            console.log('播放音效失敗，改用備用：', err);
             await fallbackBeepSound();
           } finally {
-            // 額外觸覺提示（支援的裝置會震動）
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
           }
         }
         
-        // 備用提醒音 (Web Audio API)
+        // 備用提醒音
         async function fallbackBeepSound() {
           try {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -362,35 +746,20 @@
           }
         }
 
-        
         document.addEventListener('DOMContentLoaded', function() {
+          // 載入主題設定
+          const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+          changeTheme(savedTheme);
+          
           const savedWebhook = localStorage.getItem('webhookUrl');
           if (savedWebhook) {
             document.getElementById('webhookUrl').value = savedWebhook;
             webhookUrl = savedWebhook;
-            refreshTasks(); // 直接載入
+            refreshTasks();
           }
           document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
         });
         
-        function saveWebhookConfig() {
-          const webhookInput = document.getElementById('webhookUrl');
-          webhookUrl = webhookInput.value.trim();
-        
-          // 簡單驗證：必須是 /webhook 或 /webhook-test
-          const ok = /^https?:\/\/.+\/webhook(-test)?\/[A-Za-z0-9-]+/.test(webhookUrl);
-          if (!ok) {
-            showStatus('Webhook URL 格式不對（應該像 https://…/webhook/xxxx）', 'error');
-            return;
-          }
-        
-          localStorage.setItem('webhookUrl', webhookUrl);
-          showStatus('設定已儲存！正在載入任務...', 'success');
-          refreshTasks();
-        }
-
-        
-        // 重新載入任務（回傳資料，方便後續續用）
         async function refreshTasks(silent = false) {
           if (!webhookUrl) {
             if (!silent) showStatus('請先設定Webhook URL', 'error');
@@ -403,7 +772,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'getTasks',
-                date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+                date: new Date().toISOString().split('T')[0]
               })
             });
             if (!res.ok) throw new Error('載入任務失敗');
@@ -419,8 +788,6 @@
           }
         }
 
-        
-        // 依清單刷新下拉
         function updateTaskSelect() {
           const select = document.getElementById('taskSelect');
           select.innerHTML = '<option value="">-- 選擇任務 --</option>';
@@ -432,7 +799,6 @@
           });
         }
         
-        // 選擇任務時，顯示詳細資訊（全部來自 DB）
         function onTaskSelect() {
           const idx = document.getElementById('taskSelect').value;
           if (idx === '') {
@@ -442,10 +808,8 @@
           }
           currentTaskData = allTasks[idx];
         
-          // 只顯示日期（若是 YYYY-MM-DD 就原樣）
           let dateText = '未設定';
           if (currentTaskData.date) {
-            // 若拿到純日期就用它；若是含時間也能轉
             const dStr = currentTaskData.date.slice(0, 10);
             const d = new Date(dStr + 'T00:00:00');
             dateText = d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' });
@@ -454,25 +818,21 @@
           document.getElementById('taskDate').textContent = dateText;
           document.getElementById('taskDescription').textContent = currentTaskData.description || '無描述';
           document.getElementById('completedTomatoes').textContent = currentTaskData.tomato || 0;
-          document.getElementById('totalDuration').textContent = (currentTaskData.duration ?? 0); // 直接顯示分鐘
-          // 若想顯示 h 小時 m 分：改用 formatMinutes(currentTaskData.duration)
+          document.getElementById('totalDuration').textContent = (currentTaskData.duration ?? 0);
         
           document.getElementById('taskDetails').style.display = 'block';
         }
         
-        // 狀態提示
         function showStatus(message, type) {
           const el = document.getElementById('status');
-          console.log('[STATUS]', type, message); // 方便你在 Console 確認是否有呼叫
+          console.log('[STATUS]', type, message);
           el.textContent = message;
           el.className = `status ${type}`;
           el.style.display = 'block';
-          // 顯示 5 秒
           clearTimeout(showStatus._t);
           showStatus._t = setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
         
-        // 開始番茄鐘
         function startPomodoro() {
           unlockAudio();
           const taskSelect = document.getElementById('taskSelect');
@@ -536,13 +896,9 @@
           isRunning = false;
           document.getElementById('timerDisplay').style.color = '#28a745';
           showStatus('🎉 番茄鐘完成！', 'success');
-          // 播放完成提醒音
           playCompletionSound();
         
-          // 記錄到 Notion（交由 n8n 累積）
           await recordToNotion();
-        
-          // 完成後**重新抓 DB**並更新畫面（不要在前端自行 +1）
           await refreshAndReselect();
         
           if (currentPomodoro < totalPomodoros) {
@@ -602,7 +958,6 @@
           document.getElementById('timerDisplay').style.color = '#333';
         }
         
-        // 記錄到 Notion（成功就立刻顯示訊息，之後靜默刷新畫面）
         async function recordToNotion() {
           if (!webhookUrl) { showStatus('未設定Webhook URL，無法記錄到Notion', 'error'); return; }
           if (!currentTaskData) { showStatus('沒有選擇任務，無法記錄', 'error'); return; }
@@ -629,10 +984,8 @@
             });
         
             if (res.ok) {
-              // ✅ 先讓使用者看到成功提示
               showStatus('✅ 已記錄到Notion！', 'success');
-              // 再「靜默」刷新清單與詳情
-              refreshAndReselect(); // 不 await，避免阻塞 UI
+              refreshAndReselect();
               return;
             }
         
@@ -646,21 +999,17 @@
           }
         }
 
-        
-        // 重新抓清單並維持選取中的任務（用 id 對照）
         async function refreshAndReselect() {
           const prevId = currentTaskData?.id;
-          const data = await refreshTasks(true); // ← 靜默刷新
+          const data = await refreshTasks(true);
           if (!data || !prevId) return;
         
           const idx = allTasks.findIndex(t => t.id === prevId);
           if (idx >= 0) {
             document.getElementById('taskSelect').value = String(idx);
-            onTaskSelect(); // 重新渲染詳情（這次 tomato/duration 都從 DB 來）
+            onTaskSelect();
           }
         }
-
-
     </script>
 </body>
 </html>
