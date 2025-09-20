@@ -747,13 +747,23 @@
           const savedTheme = localStorage.getItem('selectedTheme') || 'default';
           changeTheme(savedTheme);
           
+          // 載入 Webhook 設定
           const savedWebhook = localStorage.getItem('webhookUrl');
           if (savedWebhook) {
-            document.getElementById('webhookUrl').value = savedWebhook;
             webhookUrl = savedWebhook;
+            // 檢查面板中的輸入框是否存在再設定值
+            const webhookInput = document.getElementById('webhookUrlPanel');
+            if (webhookInput) {
+              webhookInput.value = savedWebhook;
+            }
             refreshTasks();
           }
-          document.getElementById('taskSelect').addEventListener('change', onTaskSelect);
+          
+          // 設定任務選擇監聽器
+          const taskSelect = document.getElementById('taskSelect');
+          if (taskSelect) {
+            taskSelect.addEventListener('change', onTaskSelect);
+          }
         });
         
         async function refreshTasks(silent = false) {
