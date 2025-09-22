@@ -794,8 +794,7 @@
         let currentPomodoro = 1;
         let totalPomodoros = 1;
         let startTime = null;
-
-        let endAt = null;
+        let timerStartTime = null; // 新增：記錄計時器開始的實際時間
         
         let webhookUrl = '';
         let allTasks = [];
@@ -898,19 +897,35 @@
           }
         }
 
-        document.addEventListener('visibilitychange', () => {
-          if (!isRunning) return;
-          clearInterval(currentTimer);
-          // 直接重新開啟 ticking；remaining 會由 endAt 自動算出
-          startTimer();
+        document.addEventListener('DOMContentLoaded', function() {
+          // 載入主題設定
+          const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+          changeTheme(savedTheme);
+          
+          // 載入 Webhook 設定
+          const savedWebhook = localStorage.getItem('webhookUrl');
+          if (savedWebhook) {
+            webhookUrl = savedWebhook;
+            const webhookInput = document.getElementById('webhookUrlPanel');
+            if (webhookInput) {
+              webhookInput.value = savedWebhook;
+            }
+            refreshTasks();
+          }
+          
+          const taskSelect = document.getElementById('taskSelect');
+          if (taskSelect) {
+            taskSelect.addEventListener('change', onTaskSelect);
+          }
+          
+          // 監聽頁面可見性變化，確保計時準確
+          document.addEventListener('visibilitychange', function() {
+            if (isRunning && !document.hidden && timerStartTime) {
+              // 頁面重新可見時，重新校準計時器
+              recalibrateTimer();
+            }
+          });
         });
-        window.addEventListener('focus', () => {
-          if (isRunning) { clearInterval(currentTimer); startTimer(); }
-        });
-        window.addEventListener('blur', () => {
-          // 不做事：背景時 interval 可能被節流，回來再重開即可
-        });
-
 
         // 重新校準計時器（頁面重新可見時）
         function recalibrateTimer() {
@@ -1019,8 +1034,6 @@
           remainingSeconds = totalSeconds;
           totalPomodoros = parseInt(document.getElementById('expectedPomodoros').value);
           currentPomodoro = 1;
-         // 這一輪真正的結束時間 = 現在 + 剩餘秒數
-          endAt = Date.now() + remainingSeconds * 1000;
           startTime = new Date();
         
           document.getElementById('currentTaskName').textContent = currentTaskData.title;
@@ -1034,38 +1047,43 @@
         function toggleTimer() {
           const btn = document.getElementById('playPauseBtn');
           if (isRunning) {
+            // 暫停時保存當前狀態
             clearInterval(currentTimer);
             isRunning = false;
-            // 暫停時把 endAt 改成：現在 + 目前剩餘秒數
-            endAt = Date.now() + Math.max(0, remainingSeconds) * 1000;
             btn.textContent = '▶️ 開始';
           } else {
-            // 繼續：endAt 若尚未設定（剛開始）就補上
-            if (!endAt) endAt = Date.now() + Math.max(0, remainingSeconds) * 1000;
+            // 重新開始時重新記錄開始時間
             startTimer();
             isRunning = true;
             btn.textContent = '⏸️ 暫停';
           }
         }
-
-        function startTimer() {
-          clearInterval(currentTimer);
-          currentTimer = setInterval(() => {
-            // 以牆鐘時間推算剩餘
-            const msLeft = (endAt ?? Date.now()) - Date.now();
-            remainingSeconds = Math.max(0, Math.round(msLeft / 1000));
         
+        function startTimer() {
+          // 記錄計時器真正開始的時間
+          timerStartTime = Date.now();
+          const targetEndTime = timerStartTime + (remainingSeconds * 1000);
+          
+          currentTimer = setInterval(() => {
+            // 基於實際時間計算剩餘時間
+            const now = Date.now();
+            const elapsed = Math.floor((now - timerStartTime) / 1000);
+            remainingSeconds = totalSeconds - elapsed - (totalSeconds - remainingSeconds);
+            
+            // 確保不會變成負數
+            if (remainingSeconds < 0) {
+              remainingSeconds = 0;
+            }
+            
             updateTimerDisplay();
             updateProgress();
-        
+            
             if (remainingSeconds <= 0) {
-              clearInterval(currentTimer);
-              isRunning = false;
               completePomodoro();
             }
-          }, 250); // 250ms 更新即可，體感平滑
+          }, 100); // 使用更高頻率的更新 (100ms)
         }
-
+        
         function updateTimerDisplay() {
           const m = Math.floor(remainingSeconds / 60);
           const s = remainingSeconds % 60;
@@ -1117,8 +1135,12 @@
           const minutes = parseInt(document.getElementById('pomodoroTime').value);
           totalSeconds = minutes * 60;
           remainingSeconds = totalSeconds;
-          endAt = Date.now() + remainingSeconds * 1000;   // ← 新增
-          ...
+        
+          document.getElementById('currentTaskInfo').textContent =
+            `${minutes}分鐘 | 第${currentPomodoro}/${totalPomodoros}顆番茄`;
+          document.getElementById('timerDisplay').style.color = '#333';
+          document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+          updateTimerDisplay(); updateProgress();
         }
         
         function resetTimer() {
@@ -1127,18 +1149,19 @@
           const minutes = parseInt(document.getElementById('pomodoroTime').value);
           totalSeconds = minutes * 60;
           remainingSeconds = totalSeconds;
-          endAt = null;                                    // ← 新增
-          ...
+          document.getElementById('timerDisplay').style.color = '#333';
+          document.getElementById('playPauseBtn').textContent = '▶️ 開始';
+          updateTimerDisplay(); updateProgress();
         }
         
-        function resetToSetup() {
-          clearInterval(currentTimer);
-          isRunning = false;
-          currentPomodoro = 1;
-          endAt = null;                                    // ← 新增
-          ...
+        function stopPomodoro() {
+          showConfirm('確定要停止當前的番茄鐘嗎？', function() {
+            clearInterval(currentTimer);
+            resetToSetup();
+          }, function() {
+            // 取消時不做任何事，繼續計時
+          });
         }
-
         
         function resetToSetup() {
           clearInterval(currentTimer);
