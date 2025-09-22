@@ -929,7 +929,28 @@
             console.log('備用音效也失敗：', e);
           }
         }
-
+        
+        document.addEventListener('DOMContentLoaded', function() {
+          // 載入主題設定
+          const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+          changeTheme(savedTheme);
+          
+          // 載入 Webhook 設定
+          const savedWebhook = localStorage.getItem('webhookUrl');
+          if (savedWebhook) {
+            webhookUrl = savedWebhook;
+            const webhookInput = document.getElementById('webhookUrlPanel');
+            if (webhookInput) {
+              webhookInput.value = savedWebhook;
+            }
+            refreshTasks();
+          }
+          
+          const taskSelect = document.getElementById('taskSelect');
+          if (taskSelect) {
+            taskSelect.addEventListener('change', onTaskSelect);
+          }
+                    
         document.addEventListener('visibilitychange', async () => {
           // 🔹1. 番茄鐘校準
           if (isRunning && endAt) {
