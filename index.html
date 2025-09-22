@@ -794,6 +794,7 @@
         let currentPomodoro = 1;
         let totalPomodoros = 1;
         let startTime = null;
+        let timerStartTime = null; // 新增：記錄計時器開始的實際時間
         
         let webhookUrl = '';
         let allTasks = [];
@@ -905,7 +906,6 @@
           const savedWebhook = localStorage.getItem('webhookUrl');
           if (savedWebhook) {
             webhookUrl = savedWebhook;
-            // 檢查面板中的輸入框是否存在再設定值
             const webhookInput = document.getElementById('webhookUrlPanel');
             if (webhookInput) {
               webhookInput.value = savedWebhook;
@@ -913,12 +913,39 @@
             refreshTasks();
           }
           
-          // 設定任務選擇監聽器
           const taskSelect = document.getElementById('taskSelect');
           if (taskSelect) {
             taskSelect.addEventListener('change', onTaskSelect);
           }
+          
+          // 監聽頁面可見性變化，確保計時準確
+          document.addEventListener('visibilitychange', function() {
+            if (isRunning && !document.hidden && timerStartTime) {
+              // 頁面重新可見時，重新校準計時器
+              recalibrateTimer();
+            }
+          });
         });
+
+        // 重新校準計時器（頁面重新可見時）
+        function recalibrateTimer() {
+          if (!isRunning || !timerStartTime) return;
+          
+          const now = Date.now();
+          const totalElapsed = Math.floor((now - timerStartTime) / 1000);
+          const newRemaining = (totalSeconds - (totalSeconds - remainingSeconds)) - totalElapsed;
+          
+          if (newRemaining <= 0) {
+            remainingSeconds = 0;
+            updateTimerDisplay();
+            updateProgress();
+            completePomodoro();
+          } else {
+            remainingSeconds = newRemaining;
+            updateTimerDisplay();
+            updateProgress();
+          }
+        }
         
         async function refreshTasks(silent = false) {
           if (!webhookUrl) {
@@ -1020,10 +1047,12 @@
         function toggleTimer() {
           const btn = document.getElementById('playPauseBtn');
           if (isRunning) {
+            // 暫停時保存當前狀態
             clearInterval(currentTimer);
             isRunning = false;
             btn.textContent = '▶️ 開始';
           } else {
+            // 重新開始時重新記錄開始時間
             startTimer();
             isRunning = true;
             btn.textContent = '⏸️ 暫停';
@@ -1031,12 +1060,28 @@
         }
         
         function startTimer() {
+          // 記錄計時器真正開始的時間
+          timerStartTime = Date.now();
+          const targetEndTime = timerStartTime + (remainingSeconds * 1000);
+          
           currentTimer = setInterval(() => {
-            remainingSeconds--;
+            // 基於實際時間計算剩餘時間
+            const now = Date.now();
+            const elapsed = Math.floor((now - timerStartTime) / 1000);
+            remainingSeconds = totalSeconds - elapsed - (totalSeconds - remainingSeconds);
+            
+            // 確保不會變成負數
+            if (remainingSeconds < 0) {
+              remainingSeconds = 0;
+            }
+            
             updateTimerDisplay();
             updateProgress();
-            if (remainingSeconds <= 0) completePomodoro();
-          }, 1000);
+            
+            if (remainingSeconds <= 0) {
+              completePomodoro();
+            }
+          }, 100); // 使用更高頻率的更新 (100ms)
         }
         
         function updateTimerDisplay() {
