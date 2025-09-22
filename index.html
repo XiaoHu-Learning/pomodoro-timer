@@ -787,14 +787,15 @@
         }
 
         // ========= 全域變數 =========
-        let currentTimer = null;
         let totalSeconds = 0;
         let remainingSeconds = 0;
         let isRunning = false;
         let currentPomodoro = 1;
         let totalPomodoros = 1;
         let startTime = null;
-        let timerStartTime = null; // 新增：記錄計時器開始的實際時間
+        let endAt = null;  // 用來計算剩餘秒數
+        let tickWorker = null;   // Web Worker 實例
+        let wakeLock = null
         
         let webhookUrl = '';
         let allTasks = [];
@@ -804,6 +805,38 @@
         let bellAudio = null;
         let audioCtx = null;
         let audioUnlocked = false;
+
+        function ensureTickWorker() {
+          if (tickWorker) return;
+          const workerCode = `
+            let endAt = 0;
+            onmessage = (e) => {
+              if (e.data?.type === 'start') endAt = e.data.endAt || 0;
+              if (e.data?.type === 'stop')  endAt = 0;
+            };
+            function loop() {
+              if (endAt > 0) {
+                const remaining = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+                postMessage({ type: 'tick', remaining });
+              }
+              setTimeout(loop, 250);
+            }
+            loop();
+          `;
+          const blob = new Blob([workerCode], { type: 'application/javascript' });
+          tickWorker = new Worker(URL.createObjectURL(blob));
+          tickWorker.onmessage = (e) => {
+            if (e.data?.type === 'tick') {
+              remainingSeconds = e.data.remaining;
+              updateTimerDisplay();
+              updateProgress();
+              if (remainingSeconds <= 0 && isRunning) {
+                completePomodoro();
+              }
+            }
+          };
+        }
+
         
         // 小工具：分鐘轉易讀
         const formatMinutes = (m = 0) => {
@@ -897,34 +930,25 @@
           }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-          // 載入主題設定
-          const savedTheme = localStorage.getItem('selectedTheme') || 'default';
-          changeTheme(savedTheme);
-          
-          // 載入 Webhook 設定
-          const savedWebhook = localStorage.getItem('webhookUrl');
-          if (savedWebhook) {
-            webhookUrl = savedWebhook;
-            const webhookInput = document.getElementById('webhookUrlPanel');
-            if (webhookInput) {
-              webhookInput.value = savedWebhook;
-            }
-            refreshTasks();
+        document.addEventListener('visibilitychange', async () => {
+          // 🔹1. 番茄鐘校準
+          if (isRunning && endAt) {
+            const remain = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+            remainingSeconds = remain;
+            updateTimerDisplay();
+            updateProgress();
+            if (remain <= 0) completePomodoro();
           }
-          
-          const taskSelect = document.getElementById('taskSelect');
-          if (taskSelect) {
-            taskSelect.addEventListener('change', onTaskSelect);
-          }
-          
-          // 監聽頁面可見性變化，確保計時準確
-          document.addEventListener('visibilitychange', function() {
-            if (isRunning && !document.hidden && timerStartTime) {
-              // 頁面重新可見時，重新校準計時器
-              recalibrateTimer();
+        
+          // 🔹2. 螢幕喚醒鎖（只在頁面回到前景時處理）
+          if (wakeLock !== null && document.visibilityState === 'visible') {
+            try {
+              wakeLock = await navigator.wakeLock.request('screen');
+              console.log('🔒 重新申請螢幕喚醒鎖成功');
+            } catch (err) {
+              console.warn('重新申請螢幕喚醒鎖失敗：', err);
             }
-          });
+          }
         });
 
         // 重新校準計時器（頁面重新可見時）
@@ -1041,47 +1065,43 @@
           document.getElementById('setupSection').classList.add('hidden');
           document.getElementById('timerSection').classList.remove('hidden');
         
+          try {
+            if ('wakeLock' in navigator) {
+              wakeLock = await navigator.wakeLock.request('screen');
+              console.log('🔒 螢幕保持常亮中');
+            }
+          } catch (err) {
+            console.warn('無法鎖定螢幕喚醒：', err);
+          }
+            
           updateTimerDisplay();
         }
         
+        
+        function startTimer() {
+          // 建立/啟動 Worker
+          ensureTickWorker();
+        
+          // 這裡不再靠本頁 setInterval 計時；改用牆鐘 → 設定結束時間
+          const now = Date.now();
+          endAt = now + (remainingSeconds * 1000);
+        
+          // 通知 Worker 開始滴答
+          tickWorker.postMessage({ type: 'start', endAt });
+        }
+
         function toggleTimer() {
           const btn = document.getElementById('playPauseBtn');
           if (isRunning) {
-            // 暫停時保存當前狀態
-            clearInterval(currentTimer);
+            // 暫停：先把當前 remaining 固化，停掉 Worker
             isRunning = false;
+            if (tickWorker) tickWorker.postMessage({ type: 'stop' });
             btn.textContent = '▶️ 開始';
           } else {
-            // 重新開始時重新記錄開始時間
-            startTimer();
             isRunning = true;
+            startTimer();
             btn.textContent = '⏸️ 暫停';
           }
-        }
-        
-        function startTimer() {
-          // 記錄計時器真正開始的時間
-          timerStartTime = Date.now();
-          const targetEndTime = timerStartTime + (remainingSeconds * 1000);
-          
-          currentTimer = setInterval(() => {
-            // 基於實際時間計算剩餘時間
-            const now = Date.now();
-            const elapsed = Math.floor((now - timerStartTime) / 1000);
-            remainingSeconds = totalSeconds - elapsed - (totalSeconds - remainingSeconds);
-            
-            // 確保不會變成負數
-            if (remainingSeconds < 0) {
-              remainingSeconds = 0;
-            }
-            
-            updateTimerDisplay();
-            updateProgress();
-            
-            if (remainingSeconds <= 0) {
-              completePomodoro();
-            }
-          }, 100); // 使用更高頻率的更新 (100ms)
         }
         
         function updateTimerDisplay() {
@@ -1097,7 +1117,13 @@
         }
         
         async function completePomodoro() {
-          clearInterval(currentTimer);
+          if (wakeLock) {
+              wakeLock.release().then(() => {
+                wakeLock = null;
+                console.log('🔓 已釋放螢幕喚醒鎖');
+              });
+            }
+          if (tickWorker) tickWorker.postMessage({ type: 'stop' });
           isRunning = false;
           document.getElementById('timerDisplay').style.color = '#28a745';
           showStatus('🎉 番茄鐘完成！', 'success');
@@ -1129,6 +1155,20 @@
             }, 1200);
           }
         }
+
+        function stopPomodoro() {
+          if (wakeLock) {
+              wakeLock.release().then(() => {
+                wakeLock = null;
+                console.log('🔓 已釋放螢幕喚醒鎖');
+              });
+            }
+
+          if (tickWorker) tickWorker.postMessage({ type: 'stop' }); 
+          showConfirm('確定要停止當前的番茄鐘嗎？', function() {
+            resetToSetup();
+          });
+        }
         
         function startNextPomodoro() {
           currentPomodoro++;
@@ -1144,27 +1184,30 @@
         }
         
         function resetTimer() {
-          clearInterval(currentTimer);
+          // 停掉 Worker
+          if (tickWorker) tickWorker.postMessage({ type: 'stop' });
           isRunning = false;
+        
           const minutes = parseInt(document.getElementById('pomodoroTime').value);
           totalSeconds = minutes * 60;
           remainingSeconds = totalSeconds;
+          endAt = null;
+        
           document.getElementById('timerDisplay').style.color = '#333';
           document.getElementById('playPauseBtn').textContent = '▶️ 開始';
-          updateTimerDisplay(); updateProgress();
-        }
-        
-        function stopPomodoro() {
-          showConfirm('確定要停止當前的番茄鐘嗎？', function() {
-            clearInterval(currentTimer);
-            resetToSetup();
-          }, function() {
-            // 取消時不做任何事，繼續計時
-          });
+          updateTimerDisplay();
+          updateProgress();
         }
         
         function resetToSetup() {
-          clearInterval(currentTimer);
+          if (wakeLock) {
+              wakeLock.release().then(() => {
+                wakeLock = null;
+                console.log('🔓 已釋放螢幕喚醒鎖');
+              });
+            }
+
+          if (tickWorker) tickWorker.postMessage({ type: 'stop' });
           isRunning = false;
           currentPomodoro = 1;
           document.getElementById('setupSection').classList.remove('hidden');
