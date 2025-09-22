@@ -950,26 +950,28 @@
           if (taskSelect) {
             taskSelect.addEventListener('change', onTaskSelect);
           }
-                    
-        document.addEventListener('visibilitychange', async () => {
-          // 🔹1. 番茄鐘校準
-          if (isRunning && endAt) {
-            const remain = Math.max(0, Math.round((endAt - Date.now()) / 1000));
-            remainingSeconds = remain;
-            updateTimerDisplay();
-            updateProgress();
-            if (remain <= 0) completePomodoro();
-          }
-        
-          // 🔹2. 螢幕喚醒鎖（只在頁面回到前景時處理）
-          if (wakeLock !== null && document.visibilityState === 'visible') {
-            try {
-              wakeLock = await navigator.wakeLock.request('screen');
-              console.log('🔒 重新申請螢幕喚醒鎖成功');
-            } catch (err) {
-              console.warn('重新申請螢幕喚醒鎖失敗：', err);
-            }
-          }
+          
+          // 監聽頁面可見性變化，確保計時準確
+            document.addEventListener('visibilitychange', async () => {
+              // 🔹1. 番茄鐘校準
+              if (isRunning && endAt) {
+                const remain = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+                remainingSeconds = remain;
+                updateTimerDisplay();
+                updateProgress();
+                if (remain <= 0) completePomodoro();
+              }
+            
+              // 🔹2. 螢幕喚醒鎖（只在頁面回到前景時處理）
+              if (wakeLock !== null && document.visibilityState === 'visible') {
+                try {
+                  wakeLock = await navigator.wakeLock.request('screen');
+                  console.log('🔒 重新申請螢幕喚醒鎖成功');
+                } catch (err) {
+                  console.warn('重新申請螢幕喚醒鎖失敗：', err);
+                }
+              }
+            });
         });
 
         // 重新校準計時器（頁面重新可見時）
